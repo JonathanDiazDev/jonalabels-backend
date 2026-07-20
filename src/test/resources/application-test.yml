@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    # El prefijo jdbc:tc: levanta un contenedor de Docker mágicamente solo para los tests
+    url: jdbc:tc:postgresql:15-alpine:///etiquetas_test_db
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      # Exigimos validate. Si las entidades no coinciden con la BD de prueba, el test fallará
+      ddl-auto: validate
+    show-sql: true
+
+  flyway:
+    enabled: true
+    # Flyway se ejecutará sobre el contenedor efímero antes de que arranquen las pruebas
+    clean-disabled: false

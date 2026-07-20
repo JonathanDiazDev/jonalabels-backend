@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: db_etiquetas_rfq
+    environment:
+      POSTGRES_USER: admin_etiquetas
+      POSTGRES_PASSWORD: password_seguro_123
+      POSTGRES_DB: etiquetas_rfq_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

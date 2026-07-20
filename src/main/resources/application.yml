@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: jonalabels-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/etiquetas_rfq_db
+    username: JonaDev1230
+    password: password_seguro_123
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+jwt:
+  secret: dGhpcy1pcy1hLXZlcnktbG9uZy1zZWNyZXQta2V5LWZvci1oZWFkZXItYmFzZWQtZW5jb2RpbmctaW4tYmFzZTY0LWZvci1qd3Qtc2lnbmluZw==
+  access-expiration: 900000       # 15 minutos
+  refresh-expiration: 604800000   # 7 días
+  cookie-secure: false            # true en producción (requiere HTTPS)
