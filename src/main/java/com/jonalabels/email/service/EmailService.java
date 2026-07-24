@@ -43,9 +43,10 @@ public class EmailService {
                     cotizacion.getCantidad(),
                     cotizacion.getMedidas() != null ? cotizacion.getMedidas() : "No especificado"));
 
-            if (cotizacion.getUrlArchivo() != null && !cotizacion.getUrlArchivo().isBlank()) {
-                var recurso = storageService.cargarComoRecurso(cotizacion.getUrlArchivo());
-                var nombre = extraerNombreAdjunto(cotizacion.getUrlArchivo());
+            String urlLogo = cotizacion.getUrlDiseno();
+            if (urlLogo != null && !urlLogo.isBlank()) {
+                var recurso = storageService.cargarComoRecurso(urlLogo);
+                var nombre = extraerNombreAdjunto(urlLogo);
                 helper.addAttachment(nombre, recurso);
             }
 

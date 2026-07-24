@@ -34,7 +34,7 @@ public class CotizacionController {
     @PostMapping
     public ResponseEntity<Void> crearCotizacion(
             @RequestPart("data") @Valid CotizacionRequestDTO request,
-            @RequestPart("archivo") MultipartFile archivo) {
+            @RequestPart(value = "archivo", required = false) MultipartFile archivo) {
 
         cotizacionService.crear(request, archivo);
 

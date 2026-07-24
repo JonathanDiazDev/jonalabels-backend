@@ -213,7 +213,7 @@ class CotizacionControllerTest {
     }
 
     @Test
-    void crearCotizacion_sinArchivo_retorna400() throws Exception {
+    void crearCotizacion_sinArchivo_retorna201() throws Exception {
         var data = new MockMultipartFile(
                 "data", "", "application/json",
                 """
@@ -222,7 +222,9 @@ class CotizacionControllerTest {
 
         mockMvc.perform(multipart("/api/v1/cotizaciones")
                         .file(data))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isCreated());
+
+        verify(cotizacionService).crear(any(), any());
     }
 
     @Test
@@ -312,5 +314,25 @@ class CotizacionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado", is("COTIZADO")))
                 .andExpect(jsonPath("$.nombre", is("María García")));
+    }
+
+    @Test
+    void crearCotizacion_fallaCloudinary_retorna500() throws Exception {
+        var archivo = new MockMultipartFile(
+                "archivo", "logo.png", "image/png", "x".getBytes());
+        var data = new MockMultipartFile(
+                "data", "", "application/json",
+                """
+                {"nombre": "Test", "whatsapp": "5512345678", "cantidad": 5000, "medidas": "5cm"}
+                """.getBytes());
+
+        when(cotizacionService.crear(any(), any()))
+                .thenThrow(new RuntimeException("Error al subir archivo a Cloudinary"));
+
+        mockMvc.perform(multipart("/api/v1/cotizaciones")
+                        .file(archivo)
+                        .file(data))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message", is("Error al subir archivo a Cloudinary")));
     }
 }
