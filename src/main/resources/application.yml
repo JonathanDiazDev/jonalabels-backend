@@ -3,9 +3,9 @@ spring:
     name: jonalabels-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/etiquetas_rfq_db
-    username: JonaDev1230
-    password: password_seguro_123
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/etiquetas_rfq_db}
+    username: ${SPRING_DATASOURCE_USERNAME:JonaDev1230}
+    password: ${SPRING_DATASOURCE_PASSWORD:password_seguro_123}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -19,9 +19,31 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+    clean-on-validation-error: true
+    clean-disabled: false
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 jwt:
   secret: dGhpcy1pcy1hLXZlcnktbG9uZy1zZWNyZXQta2V5LWZvci1oZWFkZXItYmFzZWQtZW5jb2RpbmctaW4tYmFzZTY0LWZvci1qd3Qtc2lnbmluZw==
   access-expiration: 900000       # 15 minutos
   refresh-expiration: 604800000   # 7 días
   cookie-secure: false            # true en producción (requiere HTTPS)
+  cookie-same-site: Lax           # None en producción (requiere HTTPS + dominios distintos)
+
+app:
+  admin:
+    email: ${ADMIN_EMAIL:admin@jonalabels.com}
+
+
+CLOUDINARY_URL: "cloudinary://tu_api_key:tu_api_secret@tu_cloud_name"

@@ -28,6 +28,9 @@ public class AuthController {
     @Value("${jwt.cookie-secure:false}")
     private boolean cookieSecure;
 
+    @Value("${jwt.cookie-same-site:Lax}")
+    private String cookieSameSite;
+
     private static final long ACCESS_MAX_AGE = 900;       // 15 minutos
     private static final long REFRESH_MAX_AGE = 604800;   // 7 días
 
@@ -48,9 +51,9 @@ public class AuthController {
      * y JavaScript NUNCA puede leerlas, eliminando por completo el vector de robo
      * de tokens vía XSS.
      *
-     * SameSite=Lax mitiga CSRF para requests de navegación. Para requests XHR/fetch
-     * same-site, las cookies se envían normalmente; cross-site no se envían,
-     * ofreciendo protección efectiva sin romper flujos OAuth/redirection.
+     * En dev, SameSite=Lax permite cookies same-site. En producción, SameSite=None
+     * (requiere Secure=true) habilita cookies cross-origin cuando frontend y backend
+     * están en dominios distintos (ej: Vercel + Koyeb).
      */
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
@@ -85,7 +88,7 @@ public class AuthController {
         ResponseCookie clearAccess = ResponseCookie.from("access_token", "")
                 .httpOnly(true)
                 .secure(cookieSecure)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .path("/api")
                 .maxAge(0)
                 .build();
@@ -93,7 +96,7 @@ public class AuthController {
         ResponseCookie clearRefresh = ResponseCookie.from("refresh_token", "")
                 .httpOnly(true)
                 .secure(cookieSecure)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .path("/api/v1/auth")
                 .maxAge(0)
                 .build();
@@ -107,7 +110,7 @@ public class AuthController {
         return ResponseCookie.from("access_token", token)
                 .httpOnly(true)
                 .secure(cookieSecure)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .path("/api")
                 .maxAge(ACCESS_MAX_AGE)
                 .build();
@@ -117,7 +120,7 @@ public class AuthController {
         return ResponseCookie.from("refresh_token", token)
                 .httpOnly(true)
                 .secure(cookieSecure)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .path("/api/v1/auth")
                 .maxAge(REFRESH_MAX_AGE)
                 .build();

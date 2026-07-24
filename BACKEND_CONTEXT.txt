@@ -1,0 +1,258 @@
+================================================================================
+                          JONALABELS BACKEND - FULL CONTEXT
+================================================================================
+
+Stack: Java 21, Spring Boot 4.1.0, PostgreSQL, Spring Security JWT, Flyway, Cloudinary, Lombok
+Build: Maven (pom.xml)
+Main class: com.jonalabels.DemoApplication (@SpringBootApplication @EnableAsync)
+
+================================================================================
+1. REST ENDPOINTS
+================================================================================
+
+AUTH (all permitAll)
+  POST /api/v1/auth/registro      -> RegistroRequestDTO      -> 201 Created (void)
+  POST /api/v1/auth/login         -> LoginRequestDTO         -> 200 OK + Set-Cookie (access_token, refresh_token) + AuthResponseDTO
+  POST /api/v1/auth/refresh       -> Cookie("refresh_token") -> 200 OK + Set-Cookie + AuthResponseDTO (or 401)
+  POST /api/v1/auth/logout        -> (none)                  -> 200 OK + clears cookies
+
+COTIZACIONES (public POST, authenticated GET/PATCH)
+  POST   /api/v1/cotizaciones                     -> multipart: data(CotizacionRequestDTO) + archivo(MultipartFile) -> 201 Created (void)
+  GET    /api/v1/cotizaciones?page=&size=&busqueda=&estado= -> Page<CotizacionResponseDTO> (authenticated)
+  GET    /api/v1/cotizaciones/metricas             -> MetricasDashboardDTO (authenticated)
+  GET    /api/v1/cotizaciones/exportar?busqueda=&estado= -> CSV bytes (authenticated)
+  PATCH  /api/v1/cotizaciones/{id}/estado?estado= -> CotizacionResponseDTO (authenticated)
+
+PEDIDOS (authenticated, role-based)
+  POST   /api/v1/pedidos                     -> PedidoCreateRequestDTO     -> PedidoResponseDTO (CLIENTE)
+  PATCH  /api/v1/pedidos/{id}/cotizacion     -> PedidoCotizarRequestDTO   -> PedidoResponseDTO (ADMIN)
+  PATCH  /api/v1/pedidos/{id}/pago           -> (none)                     -> PedidoResponseDTO (CLIENTE)
+
+RESEÑAS
+  POST   /api/v1/resenas                     -> ResenaCreateRequestDTO    -> ResenaResponseDTO (CLIENTE)
+  PATCH  /api/v1/resenas/{id}/moderacion     -> ResenaModerarRequestDTO   -> ResenaResponseDTO (ADMIN)
+  GET    /api/v1/resenas                     -> List<ResenaResponseDTO>   (permitAll)
+
+ARCHIVOS
+  POST   /api/v1/archivos                    -> multipart: archivo        -> ArchivoResponseDTO (CLIENTE)
+  GET    /api/v1/archivos/{nombreArchivo}    -> Resource (inline)         (permitAll)
+
+================================================================================
+2. DTOs
+================================================================================
+
+LoginRequestDTO:        @NotBlank @Email email, @NotBlank password
+RegistroRequestDTO:     @NotBlank @Email email, @NotBlank @Size(min=6) password, @NotBlank rol, @NotBlank @Size(10-15) @Pattern telefono
+AuthResponseDTO:        String email, String rol
+
+CotizacionRequestDTO:   @NotBlank nombre, @NotBlank whatsapp, String email,
+                        @NotNull @Min(5000) Integer cantidad, @NotBlank String medidas
+CotizacionResponseDTO:  Long id, String nombre, String whatsapp, String email, Integer cantidad,
+                        String medidas, LocalDateTime fechaCreacion, EstadoCotizacion estado, String urlDiseno
+MetricasDashboardDTO:   Long totalProspectos, Long totalPiezasSolicitadas, Long prospectosNuevos
+
+PedidoCreateRequestDTO: @NotNull @Positive Long usuarioId, @NotNull @Positive Long productoId,
+                        @NotNull @Positive Long disenoId, @NotNull @Positive Integer cantidad, String urlDiseno
+PedidoCotizarRequestDTO: @NotNull @Positive Long tallerId, @NotNull @Positive BigDecimal costoTaller,
+                        @NotNull @Positive BigDecimal precioFinal, String comentarios
+PedidoResponseDTO:      Long id, Long usuarioId, Long productoId, Long disenoId, Long tallerId,
+                        String estado, Integer cantidad, BigDecimal precioFinalCotizado,
+                        BigDecimal costoTallerAcordado, String comentariosAdmin, String urlDiseno,
+                        LocalDateTime fechaCreacion, LocalDateTime fechaActualizacion
+
+ResenaCreateRequestDTO: @NotNull @Positive Long usuarioId, @NotNull @Positive Long pedidoId,
+                        @NotNull @Min(1) @Max(5) Integer calificacion, String comentario
+ResenaResponseDTO:      Long id, Long usuarioId, Long pedidoId, Long productoId, Integer calificacion,
+                        String comentario, EstadoModeracion estadoModeracion,
+                        LocalDateTime fechaCreacion, LocalDateTime fechaActualizacion
+ResenaModerarRequestDTO: @NotNull EstadoModeracion estado
+
+ArchivoResponseDTO:     String nombreArchivo, String url
+
+================================================================================
+3. ENTITIES
+================================================================================
+
+usuarios:       id(BIGSERIAL), email(VARCHAR UNIQUE NOT NULL), password_hash(NOT NULL),
+                rol(VARCHAR NOT NULL), direccion_envio(TEXT), telefono(VARCHAR 20),
+                fecha_creacion(TIMESTAMP), fecha_actualizacion(TIMESTAMP)
+                Implements UserDetails. getAuthorities() -> ROLE_{rol}
+
+productos:      id, nombre(100 NOT NULL), tipo_material(100 NOT NULL),
+                descripcion_corta(255), descripcion_detallada(TEXT),
+                recurso_capa_base(TEXT), recurso_capa_acabado(TEXT),
+                precio_base_referencia(DECIMAL 10,2), calificacion_promedio(DECIMAL 3,2),
+                total_resenas(INT), fecha_creacion, fecha_actualizacion
+
+talleres:       id, nombre_contacto(NOT NULL), telefono(50),
+                costo_maquila_estimado(DECIMAL 10,2), fecha_creacion, fecha_actualizacion
+
+disenos:        id, usuario_id(BIGINT NOT NULL FK->usuarios), url_archivo_logo(TEXT NOT NULL),
+                notas_cliente(TEXT), fecha_creacion, fecha_actualizacion
+
+pedidos:        id, usuario_id(FK NOT NULL), producto_id(FK NOT NULL), diseno_id(FK NOT NULL),
+                taller_id(FK nullable), estado(VARCHAR 50 NOT NULL), cantidad(INT NOT NULL),
+                precio_final_cotizado(DECIMAL 10,2), costo_taller_acordado(DECIMAL 10,2),
+                comentarios_admin(TEXT), url_diseno(VARCHAR 500),
+                fecha_creacion, fecha_actualizacion
+
+cotizaciones:   id, nombre(150 NOT NULL), whatsapp(20 NOT NULL), email(200),
+                cantidad(INT), medidas(100), url_archivo(500), url_diseno(500),
+                estado(EstadoCotizacion ENUM, NOT NULL, default NUEVO),
+                fecha_creacion(TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+resenas:        id, usuario_id(BIGINT NOT NULL), pedido_id(BIGINT NOT NULL UNIQUE),
+                producto_id(BIGINT NOT NULL), calificacion(INT NOT NULL CHECK 1-5),
+                comentario(TEXT), estado_moderacion(EstadoModeracion ENUM, NOT NULL, default PENDIENTE),
+                fecha_creacion, fecha_actualizacion
+
+Enums:
+  EstadoCotizacion: NUEVO, CONTACTADO, COTIZADO, CERRADO
+  EstadoModeracion: PENDIENTE, APROBADA, RECHAZADA
+
+Pedido state machine: ESPERANDO_FACTIBILIDAD -> COTIZADO (admin cotizar) -> PAGADO (cliente pago)
+
+================================================================================
+4. SERVICES
+================================================================================
+
+AuthService:             registrar(DTO), login(email,pass) -> TokenPair, refresh(refreshToken) -> TokenPair
+AuthServiceImpl:         BCrypt encode, JWT via JwtService, email uniqueness check
+JpaUserDetailsService:   loadUserByUsername(email) -> UsuarioRepository.findByEmail
+
+PedidoService:           crearSolicitud(usuarioId,productoId,disenoId,cantidad,urlDiseno),
+                         cotizarPedido(pedidoId,tallerId,costoTaller,precioFinal,comentarios),
+                         registrarPago(pedidoId)
+PedidoServiceImpl:       State machine validation (IllegalPedidoStateException)
+
+CotizacionService:       crear(DTO, archivo), obtenerCotizacionesPaginadas(busqueda,estado,pageable),
+                         actualizarEstado(id,nuevoEstado), obtenerMetricas(), exportarCotizacionesCsv(busqueda,estado)
+CotizacionServiceImpl:   CloudinaryService.subirArchivo() for file, EmailService for notifications
+
+ResenaService:           crearResena(usuarioId,pedidoId,calificacion,comentario),
+                         moderarResena(resenaId,estado), obtenerResenasAprobadas()
+ResenaServiceImpl:       Validates pedido ownership + PAGADO state
+
+StorageService:          guardar(MultipartFile) -> String, cargarComoRecurso(nombre) -> Resource
+LocalFileSystemStorage:  Saves to uploads/ dir, validates extensions (jpg,jpeg,png,pdf), UUID filenames
+
+EmailService:            enviarNotificacionNuevaCotizacion(Cotizacion) - @Async, attaches file
+
+================================================================================
+5. SECURITY CONFIG
+================================================================================
+
+CORS:
+  allowedOrigins: http://localhost:5173, http://localhost:3000
+  allowedMethods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+  allowedHeaders: *
+  allowCredentials: true
+  exposedHeaders: Set-Cookie
+  pathPattern: /api/**
+
+JWT Filter: runs before UsernamePasswordAuthenticationFilter
+  Token from: Authorization: Bearer header OR access_token cookie
+  Creates UsernamePasswordAuthenticationToken with ROLE_{rol}
+
+Public endpoints:
+  POST /api/v1/auth/**
+  GET  /api/v1/resenas
+  GET  /api/v1/archivos/**
+  POST /api/v1/cotizaciones
+
+All other /api/** requires authentication.
+Pedidos: CLIENTE or ADMIN roles.
+Resenas PATCH: ADMIN role.
+
+================================================================================
+6. JWT CONFIGURATION
+================================================================================
+
+  jwt.secret: (base64 encoded)
+  jwt.access-expiration: 900000 (15 min)
+  jwt.refresh-expiration: 604800000 (7 days)
+  jwt.cookie-secure: false (true in production)
+
+Cookie settings:
+  access_token: path=/api, maxAge=900, httpOnly, sameSite=Lax
+  refresh_token: path=/api/v1/auth, maxAge=604800, httpOnly, sameSite=Lax
+
+================================================================================
+7. DATABASE & APPLICATION.YML
+================================================================================
+
+  spring.datasource.url: jdbc:postgresql://localhost:5432/etiquetas_rfq_db
+  spring.datasource.username: JonaDev1230
+  spring.jpa.hibernate.ddl-auto: validate
+  spring.flyway.enabled: true
+  spring.flyway.baseline-on-migrate: true
+  spring.flyway.clean-on-validation-error: true
+
+  app.admin.email: admin@jonalabels.com
+  CLOUDINARY_URL: cloudinary://tu_api_key:tu_api_secret@tu_cloud_name
+
+Docker Compose: postgres:15-alpine, port 5432
+
+================================================================================
+8. FLYWAY MIGRATIONS
+================================================================================
+
+V1: Full schema (usuarios, productos, talleres, disenos, pedidos, resenas)
+V2: resenas.estado -> estado_moderacion (rename + default PENDIENTE)
+V3: usuarios.add(telefono VARCHAR(20))
+V4: pedidos.add(url_diseno VARCHAR(500))
+V5: CREATE TABLE cotizaciones (id, nombre, whatsapp, email, cantidad, medidas,
+    url_archivo, url_diseno, estado VARCHAR(50), fecha_creacion, estado_cotizacion VARCHAR(50) NOT NULL)
+
+*** KNOWN ISSUE: V5 creates both `estado` and `estado_cotizacion` columns.
+    The JPA entity only maps `estado` (EstadoCotizacion enum).
+    `estado_cotizacion` is NOT mapped by JPA and has NOT NULL with no default.
+    This WILL cause constraint violations on INSERT in production.
+    Hibernate schema validation checks only MAPPED columns so it passes.
+    Fix: Add V6 migration to DROP COLUMN estado_cotizacion. ***
+
+================================================================================
+9. ADMIN SEEDER
+================================================================================
+
+  Seeds: admin@jonalabels.com / Admin123! / role ADMIN
+  Skips if user already exists.
+
+================================================================================
+10. CLOUDINARY
+================================================================================
+
+  CloudinaryConfig: @ConditionalOnProperty("CLOUDINARY_URL"), creates Cloudinary bean
+  CloudinaryService: @ConditionalOnBean(Cloudinary.class), subirArchivo(MultipartFile) -> secure_url
+  Both are conditional: only active when CLOUDINARY_URL is set.
+
+================================================================================
+11. GLOBAL EXCEPTION HANDLER
+================================================================================
+
+  RecursoNoEncontradoException -> 404
+  IllegalPedidoStateException -> 400
+  IllegalStateException -> 409
+  BadCredentialsException -> 401 "Credenciales invalidas"
+  MethodArgumentNotValidException -> 400 with field-level details
+  IllegalArgumentException -> 400
+
+================================================================================
+12. FRONTEND-BACKEND INTEGRATION MAP
+================================================================================
+
+Frontend base URL: VITE_API_URL env var or /api/v1 (Vite proxy in dev)
+Credentials: credentials: 'include' on all apiFetch calls
+
+Frontend Call                          -> Backend Endpoint                Auth?
+─────────────────────────────────────────────────────────────────────────────────
+POST /auth/login (LoginRequestDTO)     -> POST /api/v1/auth/login        Public
+POST /auth/refresh (cookie)            -> POST /api/v1/auth/refresh      Public
+POST /auth/logout                      -> POST /api/v1/auth/logout       Public
+POST /cotizaciones (multipart)         -> POST /api/v1/cotizaciones      Public
+GET  /cotizaciones?page=&size=         -> GET  /api/v1/cotizaciones      Auth
+GET  /cotizaciones/metricas            -> GET  /api/v1/cotizaciones/metricas Auth
+GET  /cotizaciones/exportar?           -> GET  /api/v1/cotizaciones/exportar  Auth
+PATCH /cotizaciones/{id}/estado?estado -> PATCH /api/v1/cotizaciones/{id}/estado Auth
+
+================================================================================
