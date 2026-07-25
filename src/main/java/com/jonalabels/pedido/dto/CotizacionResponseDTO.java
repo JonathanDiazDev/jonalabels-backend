@@ -10,6 +10,7 @@ public record CotizacionResponseDTO(
         String whatsapp,
         String email,
         Integer cantidad,
+        String tipoProducto,
         String medidas,
         LocalDateTime fechaCreacion,
         EstadoCotizacion estado,

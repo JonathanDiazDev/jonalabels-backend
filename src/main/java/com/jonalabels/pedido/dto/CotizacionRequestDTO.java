@@ -17,6 +17,8 @@ public record CotizacionRequestDTO(
         @Min(value = 5000, message = "El pedido mínimo es de 5000 piezas")
         Integer cantidad,
 
+        String tipoProducto,
+
         @NotBlank(message = "Las medidas son obligatorias")
         String medidas
 ) {}

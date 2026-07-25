@@ -250,8 +250,8 @@ class CotizacionControllerTest {
     void listarCotizaciones_retornaPaginaConStatus200() throws Exception {
         var ahora = LocalDateTime.now();
         var cotizaciones = List.of(
-                new CotizacionResponseDTO(1L, "María García", "5512345678", "maria@ejemplo.com", 5000, "5cm x 3cm", ahora, EstadoCotizacion.NUEVO, "https://res.cloudinary.com/demo.jpg"),
-                new CotizacionResponseDTO(2L, "Carlos López", "5512345678", null, 10000, "10cm", ahora.minusHours(1), EstadoCotizacion.CONTACTADO, null));
+                new CotizacionResponseDTO(1L, "María García", "5512345678", "maria@ejemplo.com", 5000, "Etiquetas de Satén", "5cm x 3cm", ahora, EstadoCotizacion.NUEVO, "https://res.cloudinary.com/demo.jpg"),
+                new CotizacionResponseDTO(2L, "Carlos López", "5512345678", null, 10000, null, "10cm", ahora.minusHours(1), EstadoCotizacion.CONTACTADO, null));
         var pagina = new PageImpl<>(cotizaciones, PageRequest.of(0, 10), 2);
 
         when(cotizacionService.obtenerCotizacionesPaginadas(any(), any(), any())).thenReturn(pagina);
@@ -291,7 +291,7 @@ class CotizacionControllerTest {
     @Test
     @WithMockUser
     void exportarCsv_retornaArchivoConHeaders() throws Exception {
-        var csv = "ID,Fecha,Nombre,WhatsApp,Email,Cantidad,Medidas,Estado\n1,01/01/2025 10:00,María García,5512345678,maria@ejemplo.com,5000,5cm x 3cm,NUEVO\n".getBytes();
+        var csv = "ID,Fecha,Nombre,WhatsApp,Email,Cantidad,Tipo Producto,Medidas,Estado\n1,01/01/2025 10:00,María García,5512345678,maria@ejemplo.com,5000,Etiquetas de Satén,5cm x 3cm,NUEVO\n".getBytes();
 
         when(cotizacionService.exportarCotizacionesCsv(any(), any())).thenReturn(csv);
 
@@ -305,7 +305,7 @@ class CotizacionControllerTest {
     @Test
     @WithMockUser
     void cambiarEstado_retornaCotizacionActualizada() throws Exception {
-        var actualizada = new CotizacionResponseDTO(1L, "María García", "5512345678", "maria@ejemplo.com", 5000, "5cm x 3cm", LocalDateTime.now(), EstadoCotizacion.COTIZADO, null);
+        var actualizada = new CotizacionResponseDTO(1L, "María García", "5512345678", "maria@ejemplo.com", 5000, "Etiquetas de Satén", "5cm x 3cm", LocalDateTime.now(), EstadoCotizacion.COTIZADO, null);
 
         when(cotizacionService.actualizarEstado(anyLong(), any())).thenReturn(actualizada);
 

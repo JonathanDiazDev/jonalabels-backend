@@ -52,6 +52,8 @@ jwt:
 app:
   admin:
     email: ${ADMIN_EMAIL:admin@jonalabels.com}
+  mail:
+    from: ${MAIL_USERNAME:}
 
 
 CLOUDINARY_URL: "cloudinary://tu_api_key:tu_api_secret@tu_cloud_name"

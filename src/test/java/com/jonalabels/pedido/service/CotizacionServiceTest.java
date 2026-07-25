@@ -20,6 +20,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,7 +50,8 @@ class CotizacionServiceTest {
                 "María García",
                 "5512345678",
                 "maria@ejemplo.com",
-                500,
+                5000,
+                "Etiquetas de Satén Premium",
                 "5cm x 3cm");
         var archivo = new MockMultipartFile(
                 "archivo", "logo.png", "image/png", "contenido".getBytes());
@@ -58,7 +62,8 @@ class CotizacionServiceTest {
                 .nombre("María García")
                 .whatsapp("5512345678")
                 .email("maria@ejemplo.com")
-                .cantidad(500)
+                .cantidad(5000)
+                .tipoProducto("Etiquetas de Satén Premium")
                 .medidas("5cm x 3cm")
                 .urlDiseno(urlCloudinary)
                 .build();
@@ -73,7 +78,8 @@ class CotizacionServiceTest {
         assertThat(resultado.getNombre()).isEqualTo("María García");
         assertThat(resultado.getWhatsapp()).isEqualTo("5512345678");
         assertThat(resultado.getEmail()).isEqualTo("maria@ejemplo.com");
-        assertThat(resultado.getCantidad()).isEqualTo(500);
+        assertThat(resultado.getCantidad()).isEqualTo(5000);
+        assertThat(resultado.getTipoProducto()).isEqualTo("Etiquetas de Satén Premium");
         assertThat(resultado.getMedidas()).isEqualTo("5cm x 3cm");
         assertThat(resultado.getUrlDiseno()).isEqualTo(urlCloudinary);
 
@@ -89,6 +95,7 @@ class CotizacionServiceTest {
                 "5512345678",
                 null,
                 null,
+                null,
                 null);
         MultipartFile archivo = null;
 
@@ -98,6 +105,7 @@ class CotizacionServiceTest {
                 .whatsapp("5512345678")
                 .email(null)
                 .cantidad(null)
+                .tipoProducto(null)
                 .medidas(null)
                 .urlDiseno(null)
                 .build();
@@ -110,6 +118,7 @@ class CotizacionServiceTest {
         assertThat(resultado.getWhatsapp()).isEqualTo("5512345678");
         assertThat(resultado.getEmail()).isNull();
         assertThat(resultado.getCantidad()).isNull();
+        assertThat(resultado.getTipoProducto()).isNull();
         assertThat(resultado.getMedidas()).isNull();
         assertThat(resultado.getUrlDiseno()).isNull();
         verify(cotizacionRepository).save(any(Cotizacion.class));
@@ -122,7 +131,8 @@ class CotizacionServiceTest {
                 "Ana Martínez",
                 "5512345678",
                 "ana@test.com",
-                1000,
+                10000,
+                "Cartón Colgante",
                 null);
         var archivo = new MockMultipartFile(
                 "archivo", "logo-ana.png", "image/png", "contenido".getBytes());
@@ -143,7 +153,8 @@ class CotizacionServiceTest {
         assertThat(capturada.getNombre()).isEqualTo("Ana Martínez");
         assertThat(capturada.getWhatsapp()).isEqualTo("5512345678");
         assertThat(capturada.getEmail()).isEqualTo("ana@test.com");
-        assertThat(capturada.getCantidad()).isEqualTo(1000);
+        assertThat(capturada.getCantidad()).isEqualTo(10000);
+        assertThat(capturada.getTipoProducto()).isEqualTo("Cartón Colgante");
         assertThat(capturada.getMedidas()).isNull();
         assertThat(capturada.getUrlDiseno()).isEqualTo(urlCloudinary);
 
@@ -171,5 +182,93 @@ class CotizacionServiceTest {
         assertThat(resultado.estado()).isEqualTo(EstadoCotizacion.COTIZADO);
         verify(cotizacionRepository).findById(1L);
         verify(cotizacionRepository).save(cotizacionExistente);
+    }
+
+    @Test
+    void crear_conEmailValido_enviaConfirmacionAlCliente() {
+        var request = new CotizacionRequestDTO(
+                "Laura Sánchez",
+                "5598765432",
+                "laura@empresa.com",
+                8000,
+                "Etiquetas Adheribles",
+                "7cm x 4cm");
+
+        var cotizacionGuardada = Cotizacion.builder()
+                .id(4L)
+                .nombre("Laura Sánchez")
+                .whatsapp("5598765432")
+                .email("laura@empresa.com")
+                .cantidad(8000)
+                .tipoProducto("Etiquetas Adheribles")
+                .medidas("7cm x 4cm")
+                .build();
+
+        when(cotizacionRepository.save(any(Cotizacion.class))).thenReturn(cotizacionGuardada);
+
+        cotizacionService.crear(request, null);
+
+        verify(emailService).enviarNotificacionNuevaCotizacion(cotizacionGuardada);
+        verify(emailService).enviarConfirmacionCliente(
+                "laura@empresa.com",
+                "Laura Sánchez",
+                "Etiquetas Adheribles",
+                8000);
+    }
+
+    @Test
+    void crear_sinEmail_noEnviaConfirmacionAlCliente() {
+        var request = new CotizacionRequestDTO(
+                "Roberto Díaz",
+                "5511223344",
+                null,
+                6000,
+                "Bolsa Impresa",
+                "10cm x 5cm");
+
+        var cotizacionGuardada = Cotizacion.builder()
+                .id(5L)
+                .nombre("Roberto Díaz")
+                .whatsapp("5511223344")
+                .email(null)
+                .cantidad(6000)
+                .tipoProducto("Bolsa Impresa")
+                .medidas("10cm x 5cm")
+                .build();
+
+        when(cotizacionRepository.save(any(Cotizacion.class))).thenReturn(cotizacionGuardada);
+
+        cotizacionService.crear(request, null);
+
+        verify(emailService).enviarNotificacionNuevaCotizacion(cotizacionGuardada);
+        verify(emailService, never()).enviarConfirmacionCliente(anyString(), anyString(), anyString(), anyInt());
+    }
+
+    @Test
+    void crear_conEmailEnBlanco_noEnviaConfirmacionAlCliente() {
+        var request = new CotizacionRequestDTO(
+                "Pedro Gómez",
+                "5566778899",
+                "   ",
+                12000,
+                "Avíos Textiles",
+                "3cm x 2cm");
+
+        var cotizacionGuardada = Cotizacion.builder()
+                .id(6L)
+                .nombre("Pedro Gómez")
+                .whatsapp("5566778899")
+                .email("   ")
+                .cantidad(12000)
+                .tipoProducto("Avíos Textiles")
+                .medidas("3cm x 2cm")
+                .build();
+
+        when(cotizacionRepository.save(any(Cotizacion.class))).thenReturn(cotizacionGuardada);
+
+        cotizacionService.crear(request, null);
+
+        verify(emailService).enviarNotificacionNuevaCotizacion(cotizacionGuardada);
+        verify(emailService, never()).enviarConfirmacionCliente(anyString(), anyString(), anyString(), anyInt());
     }
 }

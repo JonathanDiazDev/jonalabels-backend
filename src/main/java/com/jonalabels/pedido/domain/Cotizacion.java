@@ -28,6 +28,9 @@ public class Cotizacion {
     @Column(length = 200)
     private String email;
 
+    @Column(length = 200)
+    private String tipoProducto;
+
     private Integer cantidad;
 
     @Column(length = 100)

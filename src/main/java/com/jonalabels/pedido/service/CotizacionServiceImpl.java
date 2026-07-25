@@ -38,11 +38,19 @@ public class CotizacionServiceImpl implements CotizacionService {
                 .whatsapp(request.whatsapp())
                 .email(request.email())
                 .cantidad(request.cantidad())
+                .tipoProducto(request.tipoProducto())
                 .medidas(request.medidas())
                 .urlDiseno(urlDiseno)
                 .build();
         var guardada = cotizacionRepository.save(cotizacion);
         emailService.enviarNotificacionNuevaCotizacion(guardada);
+        if (guardada.getEmail() != null && !guardada.getEmail().isBlank()) {
+            emailService.enviarConfirmacionCliente(
+                    guardada.getEmail(),
+                    guardada.getNombre(),
+                    guardada.getTipoProducto(),
+                    guardada.getCantidad());
+        }
         return guardada;
     }
 
@@ -68,7 +76,7 @@ public class CotizacionServiceImpl implements CotizacionService {
         var cotizaciones = cotizacionRepository.buscarConFiltros(busqueda, estado, Pageable.unpaged());
 
         var sb = new StringBuilder();
-        sb.append("ID,Fecha,Nombre,WhatsApp,Email,Cantidad,Medidas,Estado\n");
+        sb.append("ID,Fecha,Nombre,WhatsApp,Email,Cantidad,Tipo Producto,Medidas,Estado\n");
         var fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
         for (var c : cotizaciones) {
@@ -78,6 +86,7 @@ public class CotizacionServiceImpl implements CotizacionService {
             sb.append(escaparCsv(c.getWhatsapp())).append(",");
             sb.append(escaparCsv(c.getEmail())).append(",");
             sb.append(c.getCantidad() != null ? c.getCantidad() : "").append(",");
+            sb.append(escaparCsv(c.getTipoProducto())).append(",");
             sb.append(escaparCsv(c.getMedidas())).append(",");
             sb.append(c.getEstado()).append("\n");
         }
@@ -109,6 +118,7 @@ public class CotizacionServiceImpl implements CotizacionService {
                 c.getWhatsapp(),
                 c.getEmail(),
                 c.getCantidad(),
+                c.getTipoProducto(),
                 c.getMedidas(),
                 c.getFechaCreacion(),
                 c.getEstado(),
