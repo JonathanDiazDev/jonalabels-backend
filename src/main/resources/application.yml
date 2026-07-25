@@ -2,15 +2,23 @@ spring:
   application:
     name: jonalabels-backend
 
+  main:
+    lazy-initialization: true
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/etiquetas_rfq_db}
     username: ${SPRING_DATASOURCE_USERNAME:JonaDev1230}
     password: ${SPRING_DATASOURCE_PASSWORD:password_seguro_123}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 5
+      minimum-idle: 1
 
   jpa:
     hibernate:
       ddl-auto: validate
+    open-in-view: false
     show-sql: true
     properties:
       hibernate:
