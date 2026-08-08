@@ -66,7 +66,7 @@ class EmailServiceTest {
         emailService.enviarConfirmacionCliente(
                 "cliente@test.com",
                 "María López",
-                "Etiquetas de Satén Premium",
+                "Etiquetas de Satín Premium",
                 10000);
 
         verify(mailSender).send(any(MimeMessage.class));
@@ -104,7 +104,7 @@ class EmailServiceTest {
         emailService.enviarConfirmacionCliente(
                 null,
                 "María López",
-                "Etiquetas de Satén Premium",
+                "Etiquetas de Satín Premium",
                 10000);
 
         verify(mailSender, never()).send(any(MimeMessage.class));
@@ -115,7 +115,7 @@ class EmailServiceTest {
         emailService.enviarConfirmacionCliente(
                 "  ",
                 "María López",
-                "Etiquetas de Satén Premium",
+                "Etiquetas de Satín Premium",
                 10000);
 
         verify(mailSender, never()).send(any(MimeMessage.class));
@@ -131,7 +131,7 @@ class EmailServiceTest {
         emailService.enviarConfirmacionCliente(
                 "cliente@test.com",
                 "María López",
-                "Etiquetas de Satén Premium",
+                "Etiquetas de Satín Premium",
                 10000);
 
         verify(mailSender).send(any(MimeMessage.class));

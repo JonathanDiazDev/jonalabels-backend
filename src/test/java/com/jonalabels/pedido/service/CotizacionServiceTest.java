@@ -51,7 +51,7 @@ class CotizacionServiceTest {
                 "5512345678",
                 "maria@ejemplo.com",
                 5000,
-                "Etiquetas de Satén Premium",
+                "Etiquetas de Satín Premium",
                 "5cm x 3cm");
         var archivo = new MockMultipartFile(
                 "archivo", "logo.png", "image/png", "contenido".getBytes());
@@ -63,7 +63,7 @@ class CotizacionServiceTest {
                 .whatsapp("5512345678")
                 .email("maria@ejemplo.com")
                 .cantidad(5000)
-                .tipoProducto("Etiquetas de Satén Premium")
+                .tipoProducto("Etiquetas de Satín Premium")
                 .medidas("5cm x 3cm")
                 .urlDiseno(urlCloudinary)
                 .build();
@@ -79,7 +79,7 @@ class CotizacionServiceTest {
         assertThat(resultado.getWhatsapp()).isEqualTo("5512345678");
         assertThat(resultado.getEmail()).isEqualTo("maria@ejemplo.com");
         assertThat(resultado.getCantidad()).isEqualTo(5000);
-        assertThat(resultado.getTipoProducto()).isEqualTo("Etiquetas de Satén Premium");
+        assertThat(resultado.getTipoProducto()).isEqualTo("Etiquetas de Satín Premium");
         assertThat(resultado.getMedidas()).isEqualTo("5cm x 3cm");
         assertThat(resultado.getUrlDiseno()).isEqualTo(urlCloudinary);
 
