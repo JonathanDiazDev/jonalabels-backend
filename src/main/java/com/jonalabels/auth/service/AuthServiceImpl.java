@@ -26,7 +26,7 @@ class AuthServiceImpl implements AuthService {
     public void registrar(RegistroRequestDTO request) {
         usuarioRepository.findByEmail(request.email())
                 .ifPresent(usuario -> {
-                    throw new IllegalStateException("Ya existe un usuario con el email: " + request.email());
+                    throw new IllegalStateException("No se pudo completar el registro. Intente nuevamente.");
                 });
 
         Usuario usuario = Usuario.builder()

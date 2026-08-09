@@ -3,9 +3,14 @@ package com.jonalabels.email.service;
 import com.jonalabels.archivo.service.StorageService;
 import com.jonalabels.pedido.domain.Cotizacion;
 import jakarta.mail.MessagingException;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -34,6 +39,11 @@ public class EmailService {
             helper.setFrom(mailFrom, "JonaLabels Estudio");
             helper.setTo(adminEmail);
             helper.setSubject("Nueva cotización - " + cotizacion.getNombre());
+
+            String urlDiseno = cotizacion.getUrlDiseno();
+            String linkDiseno = (urlDiseno != null && !urlDiseno.isBlank())
+                    ? "\nDiseño: " + urlDiseno : "";
+
             helper.setText(String.format("""
                     Se ha recibido una nueva solicitud de cotización:
 
@@ -41,24 +51,46 @@ public class EmailService {
                     WhatsApp: %s
                     Email: %s
                     Cantidad solicitada: %d
-                    Medidas: %s
+                    Medidas: %s%s
                     """,
                     cotizacion.getNombre(),
                     cotizacion.getWhatsapp(),
                     cotizacion.getEmail() != null ? cotizacion.getEmail() : "No proporcionado",
                     cotizacion.getCantidad(),
-                    cotizacion.getMedidas() != null ? cotizacion.getMedidas() : "No especificado"));
+                    cotizacion.getMedidas() != null ? cotizacion.getMedidas() : "No especificado",
+                    linkDiseno));
 
-            String urlLogo = cotizacion.getUrlDiseno();
-            if (urlLogo != null && !urlLogo.isBlank()) {
-                var recurso = storageService.cargarComoRecurso(urlLogo);
-                var nombre = extraerNombreAdjunto(urlLogo);
-                helper.addAttachment(nombre, recurso);
+            if (urlDiseno != null && !urlDiseno.isBlank()) {
+                adjuntarDiseno(helper, urlDiseno);
             }
 
             mailSender.send(message);
         } catch (MailException | MessagingException | UnsupportedEncodingException e) {
             throw new RuntimeException("Error al enviar notificación por correo", e);
+        }
+    }
+
+    private void adjuntarDiseno(MimeMessageHelper helper, String urlDiseno) {
+        String nombre = extraerNombreAdjunto(urlDiseno);
+
+        try {
+            if (urlDiseno.startsWith("http://") || urlDiseno.startsWith("https://")) {
+                byte[] bytes = descargarDesdeUrl(urlDiseno);
+                helper.addAttachment(nombre, new ByteArrayResource(bytes));
+            } else {
+                helper.addAttachment(nombre, storageService.cargarComoRecurso(urlDiseno));
+            }
+        } catch (IOException | MessagingException | RuntimeException e) {
+            System.err.println("[EmailService] No se pudo adjuntar el diseño " + urlDiseno
+                    + ": " + e.getMessage());
+        }
+    }
+
+    private byte[] descargarDesdeUrl(String urlDiseno) throws IOException {
+        try (InputStream in = new URL(urlDiseno).openStream();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            in.transferTo(out);
+            return out.toByteArray();
         }
     }
 

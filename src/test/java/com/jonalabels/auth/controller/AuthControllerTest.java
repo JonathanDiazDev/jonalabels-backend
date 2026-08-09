@@ -131,9 +131,9 @@ class AuthControllerTest {
     }
 
     @Test
-    void registro_emailDuplicado_retorna409() throws Exception {
+    void registro_emailDuplicado_retorna409ConMensajeGenerico() throws Exception {
         org.mockito.Mockito.doThrow(
-                        new IllegalStateException("Ya existe un usuario con el email: dup@test.com"))
+                        new IllegalStateException("No se pudo completar el registro. Intente nuevamente."))
                 .when(authService).registrar(
                         org.mockito.ArgumentMatchers.any(com.jonalabels.auth.dto.RegistroRequestDTO.class));
 
@@ -143,7 +143,7 @@ class AuthControllerTest {
                                 "dup@test.com", "123456", "CLIENTE", "+525512345678")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("Conflict"))
-                .andExpect(jsonPath("$.message").value("Ya existe un usuario con el email: dup@test.com"));
+                .andExpect(jsonPath("$.message").value("No se pudo completar el registro. Intente nuevamente."));
     }
 
     @Test

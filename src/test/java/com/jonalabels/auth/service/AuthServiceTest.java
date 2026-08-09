@@ -74,7 +74,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.registrar(request))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Ya existe un usuario con el email");
+                .hasMessageContaining("No se pudo completar el registro");
 
         verify(usuarioRepository, never()).save(any());
     }
