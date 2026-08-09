@@ -1,0 +1,39 @@
+# Perfil de producción: overrides sobre application.yml
+# Activar con SPRING_PROFILES_ACTIVE=prod
+
+spring:
+  main:
+    # En producción NO usamos lazy-init: cada bean se resuelve al arrancar,
+    # evitando tiempo de cómputo "escondido" en la primera request real.
+    lazy-initialization: false
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  datasource:
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    # En producción nunca dejamos que Flyway limpie la base ante un error de validación
+    clean-on-validation-error: false
+    clean-disabled: true
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql: WARN
