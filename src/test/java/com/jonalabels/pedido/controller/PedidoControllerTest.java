@@ -5,6 +5,7 @@ import com.jonalabels.entity.Diseno;
 import com.jonalabels.entity.Producto;
 import com.jonalabels.entity.Taller;
 import com.jonalabels.auth.domain.Usuario;
+import com.jonalabels.pedido.domain.EstadoPedido;
 import com.jonalabels.pedido.domain.IllegalPedidoStateException;
 import com.jonalabels.pedido.domain.Pedido;
 import com.jonalabels.pedido.service.PedidoService;
@@ -47,7 +48,7 @@ class PedidoControllerTest {
     @MockitoBean
     private JwtService jwtService;
 
-    private Pedido buildPedido(Long id, String estado) {
+    private Pedido buildPedido(Long id, EstadoPedido estado) {
         Usuario usuario = Usuario.builder().id(1L).build();
         Producto producto = Producto.builder().id(1L).build();
         Diseno diseno = Diseno.builder().id(1L).usuario(usuario).urlArchivoLogo("x").build();
@@ -70,7 +71,7 @@ class PedidoControllerTest {
     @Test
     @WithMockUser(roles = "CLIENTE")
     void crearSolicitud_retorna201() throws Exception {
-        Pedido pedido = buildPedido(1L, "ESPERANDO_FACTIBILIDAD");
+        Pedido pedido = buildPedido(1L, EstadoPedido.ESPERANDO_FACTIBILIDAD);
         when(pedidoService.crearSolicitud(anyLong(), anyLong(), anyLong(), anyInt(), any())).thenReturn(pedido);
 
         mockMvc.perform(post("/api/v1/pedidos")
@@ -92,7 +93,7 @@ class PedidoControllerTest {
     @Test
     @WithMockUser(roles = "CLIENTE")
     void crearSolicitud_conUrlDiseno_retorna201() throws Exception {
-        Pedido pedido = buildPedido(1L, "ESPERANDO_FACTIBILIDAD");
+        Pedido pedido = buildPedido(1L, EstadoPedido.ESPERANDO_FACTIBILIDAD);
         pedido.setUrlDiseno("https://s3.amazonaws.com/logos/diseno.png");
         when(pedidoService.crearSolicitud(anyLong(), anyLong(), anyLong(), anyInt(), any())).thenReturn(pedido);
 
@@ -152,7 +153,7 @@ class PedidoControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void cotizarPedido_retorna200() throws Exception {
-        Pedido pedido = buildPedido(1L, "COTIZADO");
+        Pedido pedido = buildPedido(1L, EstadoPedido.COTIZADO);
         when(pedidoService.cotizarPedido(eq(1L), anyLong(), any(BigDecimal.class), any(BigDecimal.class), nullable(String.class)))
                 .thenReturn(pedido);
 
@@ -190,7 +191,7 @@ class PedidoControllerTest {
     @Test
     @WithMockUser(roles = "CLIENTE")
     void registrarPago_retorna200() throws Exception {
-        Pedido pedido = buildPedido(1L, "PAGADO");
+        Pedido pedido = buildPedido(1L, EstadoPedido.PAGADO);
         when(pedidoService.registrarPago(1L)).thenReturn(pedido);
 
         mockMvc.perform(patch("/api/v1/pedidos/1/pago")
@@ -203,7 +204,7 @@ class PedidoControllerTest {
     @WithMockUser(roles = "CLIENTE")
     void registrarPago_estadoInvalido_retorna400() throws Exception {
         when(pedidoService.registrarPago(1L))
-                .thenThrow(new IllegalPedidoStateException(1L, "ESPERANDO_FACTIBILIDAD", "COTIZADO"));
+                .thenThrow(new IllegalPedidoStateException(1L, EstadoPedido.ESPERANDO_FACTIBILIDAD, EstadoPedido.COTIZADO));
 
         mockMvc.perform(patch("/api/v1/pedidos/1/pago")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -265,7 +266,7 @@ class PedidoControllerTest {
     @Test
     @WithMockUser(roles = "CLIENTE")
     void crearSolicitud_urlDisenoOpcional_retorna201() throws Exception {
-        Pedido pedido = buildPedido(1L, "ESPERANDO_FACTIBILIDAD");
+        Pedido pedido = buildPedido(1L, EstadoPedido.ESPERANDO_FACTIBILIDAD);
         when(pedidoService.crearSolicitud(anyLong(), anyLong(), anyLong(), anyInt(), any())).thenReturn(pedido);
 
         mockMvc.perform(post("/api/v1/pedidos")

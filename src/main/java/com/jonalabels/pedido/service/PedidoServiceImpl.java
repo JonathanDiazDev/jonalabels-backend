@@ -9,6 +9,7 @@ import com.jonalabels.auth.repository.UsuarioRepository;
 import com.jonalabels.repository.DisenoRepository;
 import com.jonalabels.repository.ProductoRepository;
 import com.jonalabels.repository.TallerRepository;
+import com.jonalabels.pedido.domain.EstadoPedido;
 import com.jonalabels.pedido.domain.IllegalPedidoStateException;
 import com.jonalabels.pedido.domain.Pedido;
 import com.jonalabels.pedido.repository.PedidoRepository;
@@ -22,10 +23,6 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 @Transactional
 class PedidoServiceImpl implements PedidoService {
-
-    private static final String ESTADO_ESPERANDO_FACTIBILIDAD = "ESPERANDO_FACTIBILIDAD";
-    private static final String ESTADO_COTIZADO = "COTIZADO";
-    private static final String ESTADO_PAGADO = "PAGADO";
 
     private final PedidoRepository pedidoRepository;
     private final UsuarioRepository usuarioRepository;
@@ -51,7 +48,7 @@ class PedidoServiceImpl implements PedidoService {
                 .diseno(diseno)
                 .cantidad(cantidad)
                 .urlDiseno(urlDiseno)
-                .estado(ESTADO_ESPERANDO_FACTIBILIDAD)
+                .estado(EstadoPedido.ESPERANDO_FACTIBILIDAD)
                 .build();
 
         return pedidoRepository.save(pedido);
@@ -61,12 +58,12 @@ class PedidoServiceImpl implements PedidoService {
     @Transactional
     public Pedido cotizarPedido(Long pedidoId, Long tallerId, BigDecimal costoTaller,
                                 BigDecimal precioFinal, String comentarios) {
-        Pedido pedido = pedidoRepository.findById(pedidoId)
+        Pedido pedido = pedidoRepository.findByIdConAsociaciones(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido", pedidoId));
 
-        if (!ESTADO_ESPERANDO_FACTIBILIDAD.equals(pedido.getEstado())) {
+        if (pedido.getEstado() != EstadoPedido.ESPERANDO_FACTIBILIDAD) {
             throw new IllegalPedidoStateException(
-                    pedidoId, pedido.getEstado(), ESTADO_ESPERANDO_FACTIBILIDAD);
+                    pedidoId, pedido.getEstado(), EstadoPedido.ESPERANDO_FACTIBILIDAD);
         }
 
         Taller taller = tallerRepository.findById(tallerId)
@@ -76,7 +73,7 @@ class PedidoServiceImpl implements PedidoService {
         pedido.setCostoTallerAcordado(costoTaller);
         pedido.setPrecioFinalCotizado(precioFinal);
         pedido.setComentariosAdmin(comentarios);
-        pedido.setEstado(ESTADO_COTIZADO);
+        pedido.setEstado(EstadoPedido.COTIZADO);
 
         return pedidoRepository.save(pedido);
     }
@@ -84,15 +81,15 @@ class PedidoServiceImpl implements PedidoService {
     @Override
     @Transactional
     public Pedido registrarPago(Long pedidoId) {
-        Pedido pedido = pedidoRepository.findById(pedidoId)
+        Pedido pedido = pedidoRepository.findByIdConAsociaciones(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido", pedidoId));
 
-        if (!ESTADO_COTIZADO.equals(pedido.getEstado())) {
+        if (pedido.getEstado() != EstadoPedido.COTIZADO) {
             throw new IllegalPedidoStateException(
-                    pedidoId, pedido.getEstado(), ESTADO_COTIZADO);
+                    pedidoId, pedido.getEstado(), EstadoPedido.COTIZADO);
         }
 
-        pedido.setEstado(ESTADO_PAGADO);
+        pedido.setEstado(EstadoPedido.PAGADO);
 
         return pedidoRepository.save(pedido);
     }

@@ -3,6 +3,7 @@ package com.jonalabels.resena.service;
 import com.jonalabels.common.exception.RecursoNoEncontradoException;
 import com.jonalabels.entity.Producto;
 import com.jonalabels.auth.domain.Usuario;
+import com.jonalabels.pedido.domain.EstadoPedido;
 import com.jonalabels.pedido.domain.Pedido;
 import com.jonalabels.pedido.repository.PedidoRepository;
 import com.jonalabels.resena.domain.EstadoModeracion;
@@ -59,7 +60,7 @@ class ResenaServiceTest {
                 .id(1L)
                 .usuario(usuario)
                 .producto(producto)
-                .estado("PAGADO")
+                .estado(EstadoPedido.PAGADO)
                 .cantidad(500)
                 .build();
     }
@@ -92,7 +93,7 @@ class ResenaServiceTest {
                 .id(2L)
                 .usuario(Usuario.builder().id(99L).email("otro@test.com").build())
                 .producto(producto)
-                .estado("PAGADO")
+                .estado(EstadoPedido.PAGADO)
                 .cantidad(500)
                 .build();
         when(pedidoRepository.findById(2L)).thenReturn(Optional.of(pedidoOtroUsuario));
@@ -110,7 +111,7 @@ class ResenaServiceTest {
                 .id(3L)
                 .usuario(usuario)
                 .producto(producto)
-                .estado("ESPERANDO_FACTIBILIDAD")
+                .estado(EstadoPedido.ESPERANDO_FACTIBILIDAD)
                 .cantidad(500)
                 .build();
         when(pedidoRepository.findById(3L)).thenReturn(Optional.of(pedidoPendiente));

@@ -6,7 +6,7 @@ public class IllegalPedidoStateException extends RuntimeException {
         super(mensaje);
     }
 
-    public IllegalPedidoStateException(Long pedidoId, String estadoActual, String estadoRequerido) {
+    public IllegalPedidoStateException(Long pedidoId, EstadoPedido estadoActual, EstadoPedido estadoRequerido) {
         super(String.format(
                 "Pedido %d en estado '%s' no puede realizar esta operación. Se requiere estado '%s'",
                 pedidoId, estadoActual, estadoRequerido));

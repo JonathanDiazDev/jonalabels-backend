@@ -9,6 +9,7 @@ import com.jonalabels.auth.repository.UsuarioRepository;
 import com.jonalabels.repository.DisenoRepository;
 import com.jonalabels.repository.ProductoRepository;
 import com.jonalabels.repository.TallerRepository;
+import com.jonalabels.pedido.domain.EstadoPedido;
 import com.jonalabels.pedido.domain.IllegalPedidoStateException;
 import com.jonalabels.pedido.domain.Pedido;
 import com.jonalabels.pedido.repository.PedidoRepository;
@@ -90,7 +91,7 @@ class PedidoServiceTest {
                 .producto(producto)
                 .diseno(diseno)
                 .cantidad(500)
-                .estado("ESPERANDO_FACTIBILIDAD")
+                .estado(EstadoPedido.ESPERANDO_FACTIBILIDAD)
                 .build();
     }
 
@@ -108,7 +109,7 @@ class PedidoServiceTest {
         Pedido resultado = pedidoService.crearSolicitud(1L, 1L, 1L, 500, null);
 
         assertThat(resultado).isNotNull();
-        assertThat(resultado.getEstado()).isEqualTo("ESPERANDO_FACTIBILIDAD");
+        assertThat(resultado.getEstado()).isEqualTo(EstadoPedido.ESPERANDO_FACTIBILIDAD);
         assertThat(resultado.getUsuario()).isEqualTo(usuario);
         assertThat(resultado.getProducto()).isEqualTo(producto);
         assertThat(resultado.getDiseno()).isEqualTo(diseno);
@@ -160,14 +161,14 @@ class PedidoServiceTest {
 
     @Test
     void cotizarPedido_transicionaAEstadoCotizado() {
-        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoEsperandoFactibilidad));
+        when(pedidoRepository.findByIdConAsociaciones(1L)).thenReturn(Optional.of(pedidoEsperandoFactibilidad));
         when(tallerRepository.findById(1L)).thenReturn(Optional.of(taller));
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Pedido resultado = pedidoService.cotizarPedido(
                 1L, 1L, new BigDecimal("750.00"), new BigDecimal("1250.00"), "Pedido factible");
 
-        assertThat(resultado.getEstado()).isEqualTo("COTIZADO");
+        assertThat(resultado.getEstado()).isEqualTo(EstadoPedido.COTIZADO);
         assertThat(resultado.getTaller()).isEqualTo(taller);
         assertThat(resultado.getCostoTallerAcordado()).isEqualByComparingTo(new BigDecimal("750.00"));
         assertThat(resultado.getPrecioFinalCotizado()).isEqualByComparingTo(new BigDecimal("1250.00"));
@@ -178,8 +179,8 @@ class PedidoServiceTest {
 
     @Test
     void cotizarPedido_lanzaExcepcionSiEstadoNoEsEsperandoFactibilidad() {
-        pedidoEsperandoFactibilidad.setEstado("COTIZADO");
-        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoEsperandoFactibilidad));
+        pedidoEsperandoFactibilidad.setEstado(EstadoPedido.COTIZADO);
+        when(pedidoRepository.findByIdConAsociaciones(1L)).thenReturn(Optional.of(pedidoEsperandoFactibilidad));
 
         assertThatThrownBy(() -> pedidoService.cotizarPedido(
                 1L, 1L, new BigDecimal("750.00"), new BigDecimal("1250.00"), "comentario"))
@@ -193,7 +194,7 @@ class PedidoServiceTest {
 
     @Test
     void cotizarPedido_lanzaExcepcionSiPedidoNoExiste() {
-        when(pedidoRepository.findById(99L)).thenReturn(Optional.empty());
+        when(pedidoRepository.findByIdConAsociaciones(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> pedidoService.cotizarPedido(
                 99L, 1L, new BigDecimal("750.00"), new BigDecimal("1250.00"), "comentario"))
@@ -205,7 +206,7 @@ class PedidoServiceTest {
 
     @Test
     void cotizarPedido_lanzaExcepcionSiTallerNoExiste() {
-        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoEsperandoFactibilidad));
+        when(pedidoRepository.findByIdConAsociaciones(1L)).thenReturn(Optional.of(pedidoEsperandoFactibilidad));
         when(tallerRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> pedidoService.cotizarPedido(
@@ -225,24 +226,24 @@ class PedidoServiceTest {
                 .diseno(diseno)
                 .taller(taller)
                 .cantidad(500)
-                .estado("COTIZADO")
+                .estado(EstadoPedido.COTIZADO)
                 .precioFinalCotizado(new BigDecimal("1250.00"))
                 .costoTallerAcordado(new BigDecimal("750.00"))
                 .build();
 
-        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoCotizado));
+        when(pedidoRepository.findByIdConAsociaciones(1L)).thenReturn(Optional.of(pedidoCotizado));
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Pedido resultado = pedidoService.registrarPago(1L);
 
-        assertThat(resultado.getEstado()).isEqualTo("PAGADO");
+        assertThat(resultado.getEstado()).isEqualTo(EstadoPedido.PAGADO);
 
         verify(pedidoRepository).save(pedidoCotizado);
     }
 
     @Test
     void registrarPago_lanzaExcepcionSiEstadoNoEsCotizado() {
-        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoEsperandoFactibilidad));
+        when(pedidoRepository.findByIdConAsociaciones(1L)).thenReturn(Optional.of(pedidoEsperandoFactibilidad));
 
         assertThatThrownBy(() -> pedidoService.registrarPago(1L))
                 .isInstanceOf(IllegalPedidoStateException.class)
@@ -255,7 +256,7 @@ class PedidoServiceTest {
 
     @Test
     void registrarPago_lanzaExcepcionSiPedidoNoExiste() {
-        when(pedidoRepository.findById(99L)).thenReturn(Optional.empty());
+        when(pedidoRepository.findByIdConAsociaciones(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> pedidoService.registrarPago(99L))
                 .isInstanceOf(RecursoNoEncontradoException.class)
@@ -273,10 +274,10 @@ class PedidoServiceTest {
                 .diseno(diseno)
                 .taller(taller)
                 .cantidad(500)
-                .estado("FINALIZADO")
+                .estado(EstadoPedido.FINALIZADO)
                 .build();
 
-        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoFinalizado));
+        when(pedidoRepository.findByIdConAsociaciones(1L)).thenReturn(Optional.of(pedidoFinalizado));
 
         assertThatThrownBy(() -> pedidoService.registrarPago(1L))
                 .isInstanceOf(IllegalPedidoStateException.class)
@@ -316,18 +317,18 @@ class PedidoServiceTest {
         });
 
         Pedido creado = pedidoService.crearSolicitud(1L, 1L, 1L, 500, null);
-        assertThat(creado.getEstado()).isEqualTo("ESPERANDO_FACTIBILIDAD");
+        assertThat(creado.getEstado()).isEqualTo(EstadoPedido.ESPERANDO_FACTIBILIDAD);
 
-        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(creado));
+        when(pedidoRepository.findByIdConAsociaciones(1L)).thenReturn(Optional.of(creado));
         when(tallerRepository.findById(1L)).thenReturn(Optional.of(taller));
 
         Pedido cotizado = pedidoService.cotizarPedido(
                 1L, 1L, new BigDecimal("750.00"), new BigDecimal("1250.00"), "Factible");
-        assertThat(cotizado.getEstado()).isEqualTo("COTIZADO");
+        assertThat(cotizado.getEstado()).isEqualTo(EstadoPedido.COTIZADO);
 
-        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(cotizado));
+        when(pedidoRepository.findByIdConAsociaciones(1L)).thenReturn(Optional.of(cotizado));
 
         Pedido pagado = pedidoService.registrarPago(1L);
-        assertThat(pagado.getEstado()).isEqualTo("PAGADO");
+        assertThat(pagado.getEstado()).isEqualTo(EstadoPedido.PAGADO);
     }
 }

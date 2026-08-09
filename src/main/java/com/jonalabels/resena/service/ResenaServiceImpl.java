@@ -1,6 +1,7 @@
 package com.jonalabels.resena.service;
 
 import com.jonalabels.common.exception.RecursoNoEncontradoException;
+import com.jonalabels.pedido.domain.EstadoPedido;
 import com.jonalabels.pedido.domain.Pedido;
 import com.jonalabels.pedido.repository.PedidoRepository;
 import com.jonalabels.resena.domain.EstadoModeracion;
@@ -17,8 +18,6 @@ import java.util.List;
 @Transactional
 class ResenaServiceImpl implements ResenaService {
 
-    private static final String ESTADO_PAGADO = "PAGADO";
-
     private final ResenaRepository resenaRepository;
     private final PedidoRepository pedidoRepository;
 
@@ -31,7 +30,7 @@ class ResenaServiceImpl implements ResenaService {
             throw new IllegalStateException("Solo compradores verificados pueden dejar una reseña");
         }
 
-        if (!ESTADO_PAGADO.equals(pedido.getEstado())) {
+        if (pedido.getEstado() != EstadoPedido.PAGADO) {
             throw new IllegalStateException("Solo compradores verificados pueden dejar una reseña");
         }
 

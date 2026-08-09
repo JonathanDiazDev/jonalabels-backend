@@ -1,5 +1,6 @@
 package com.jonalabels.pedido.controller;
 
+import com.jonalabels.pedido.dto.PedidoAdminResponseDTO;
 import com.jonalabels.pedido.dto.PedidoCotizarRequestDTO;
 import com.jonalabels.pedido.dto.PedidoCreateRequestDTO;
 import com.jonalabels.pedido.dto.PedidoResponseDTO;
@@ -38,7 +39,7 @@ public class PedidoController {
 
     @PatchMapping("/{id}/cotizacion")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<PedidoResponseDTO> cotizarPedido(
+    public ResponseEntity<PedidoAdminResponseDTO> cotizarPedido(
             @PathVariable Long id,
             @Valid @RequestBody PedidoCotizarRequestDTO request) {
         var pedido = pedidoService.cotizarPedido(
@@ -47,7 +48,7 @@ public class PedidoController {
                 request.costoTaller(),
                 request.precioFinal(),
                 request.comentarios());
-        return ResponseEntity.ok(PedidoResponseDTO.from(pedido));
+        return ResponseEntity.ok(PedidoAdminResponseDTO.from(pedido));
     }
 
     @PatchMapping("/{id}/pago")

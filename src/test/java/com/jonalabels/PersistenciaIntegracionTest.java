@@ -5,6 +5,7 @@ import com.jonalabels.entity.Producto;
 import com.jonalabels.entity.Taller;
 import com.jonalabels.auth.domain.Usuario;
 import com.jonalabels.auth.repository.UsuarioRepository;
+import com.jonalabels.pedido.domain.EstadoPedido;
 import com.jonalabels.pedido.domain.Pedido;
 import com.jonalabels.pedido.repository.PedidoRepository;
 import com.jonalabels.repository.DisenoRepository;
@@ -85,7 +86,7 @@ class PersistenciaIntegracionTest {
                 .producto(producto)
                 .diseno(diseno)
                 .taller(taller)
-                .estado("FINALIZADO")
+                .estado(EstadoPedido.FINALIZADO)
                 .cantidad(500)
                 .precioFinalCotizado(new BigDecimal("1250.00"))
                 .costoTallerAcordado(new BigDecimal("750.00"))
@@ -107,7 +108,7 @@ class PersistenciaIntegracionTest {
         Pedido pedidoRecuperado = pedidoRepository.findById(pedido.getId()).orElseThrow();
 
         assertThat(pedidoRecuperado.getId()).isNotNull();
-        assertThat(pedidoRecuperado.getEstado()).isEqualTo("FINALIZADO");
+        assertThat(pedidoRecuperado.getEstado()).isEqualTo(EstadoPedido.FINALIZADO);
         assertThat(pedidoRecuperado.getCantidad()).isEqualTo(500);
         assertThat(pedidoRecuperado.getPrecioFinalCotizado()).isEqualByComparingTo(new BigDecimal("1250.00"));
         assertThat(pedidoRecuperado.getCostoTallerAcordado()).isEqualByComparingTo(new BigDecimal("750.00"));

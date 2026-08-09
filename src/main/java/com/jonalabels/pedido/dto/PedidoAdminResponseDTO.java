@@ -6,7 +6,7 @@ import com.jonalabels.pedido.domain.Pedido;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public record PedidoResponseDTO(
+public record PedidoAdminResponseDTO(
         Long id,
         Long usuarioId,
         Long productoId,
@@ -15,13 +15,14 @@ public record PedidoResponseDTO(
         EstadoPedido estado,
         Integer cantidad,
         BigDecimal precioFinalCotizado,
+        BigDecimal costoTallerAcordado,
         String comentariosAdmin,
         String urlDiseno,
         LocalDateTime fechaCreacion,
         LocalDateTime fechaActualizacion
 ) {
-    public static PedidoResponseDTO from(Pedido pedido) {
-        return new PedidoResponseDTO(
+    public static PedidoAdminResponseDTO from(Pedido pedido) {
+        return new PedidoAdminResponseDTO(
                 pedido.getId(),
                 pedido.getUsuario().getId(),
                 pedido.getProducto().getId(),
@@ -30,6 +31,7 @@ public record PedidoResponseDTO(
                 pedido.getEstado(),
                 pedido.getCantidad(),
                 pedido.getPrecioFinalCotizado(),
+                pedido.getCostoTallerAcordado(),
                 pedido.getComentariosAdmin(),
                 pedido.getUrlDiseno(),
                 pedido.getFechaCreacion(),
