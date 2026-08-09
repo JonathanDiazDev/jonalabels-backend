@@ -333,6 +333,7 @@ class CotizacionControllerTest {
                         .file(archivo)
                         .file(data))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message", is("Error al subir archivo a Cloudinary")));
+                .andExpect(jsonPath("$.error", is("Internal Server Error")))
+                .andExpect(jsonPath("$.message", is("Error interno del servidor")));
     }
 }

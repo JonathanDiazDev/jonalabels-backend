@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -73,31 +74,41 @@ public class CotizacionServiceImpl implements CotizacionService {
     @Override
     @Transactional(readOnly = true)
     public byte[] exportarCotizacionesCsv(String busqueda, EstadoCotizacion estado) {
-        var cotizaciones = cotizacionRepository.buscarConFiltros(busqueda, estado, Pageable.unpaged());
-
         var sb = new StringBuilder();
         sb.append("ID,Fecha,Nombre,WhatsApp,Email,Cantidad,Tipo Producto,Medidas,Estado\n");
         var fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-        for (var c : cotizaciones) {
-            sb.append(c.getId()).append(",");
-            sb.append(c.getFechaCreacion() != null ? c.getFechaCreacion().format(fmt) : "").append(",");
-            sb.append(escaparCsv(c.getNombre())).append(",");
-            sb.append(escaparCsv(c.getWhatsapp())).append(",");
-            sb.append(escaparCsv(c.getEmail())).append(",");
-            sb.append(c.getCantidad() != null ? c.getCantidad() : "").append(",");
-            sb.append(escaparCsv(c.getTipoProducto())).append(",");
-            sb.append(escaparCsv(c.getMedidas())).append(",");
-            sb.append(c.getEstado()).append("\n");
+        try (Stream<Cotizacion> stream = cotizacionRepository.streamConFiltros(busqueda, estado)) {
+            stream.forEach(c -> {
+                sb.append(c.getId()).append(",");
+                sb.append(c.getFechaCreacion() != null ? c.getFechaCreacion().format(fmt) : "").append(",");
+                sb.append(celdaCsv(c.getNombre())).append(",");
+                sb.append(celdaCsv(c.getWhatsapp())).append(",");
+                sb.append(celdaCsv(c.getEmail())).append(",");
+                sb.append(c.getCantidad() != null ? c.getCantidad() : "").append(",");
+                sb.append(celdaCsv(c.getTipoProducto())).append(",");
+                sb.append(celdaCsv(c.getMedidas())).append(",");
+                sb.append(c.getEstado()).append("\n");
+            });
         }
 
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private static String escaparCsv(String valor) {
+    private static String celdaCsv(String valor) {
         if (valor == null) return "";
-        if (valor.contains(",") || valor.contains("\"") || valor.contains("\n")) {
-            return "\"" + valor.replace("\"", "\"\"") + "\"";
+        String saneado = sanitizarFormula(valor);
+        if (saneado.contains(",") || saneado.contains("\"") || saneado.contains("\n")) {
+            return "\"" + saneado.replace("\"", "\"\"") + "\"";
+        }
+        return saneado;
+    }
+
+    private static String sanitizarFormula(String valor) {
+        if (valor.isEmpty()) return valor;
+        char primero = valor.charAt(0);
+        if (primero == '=' || primero == '+' || primero == '-' || primero == '@') {
+            return "'" + valor;
         }
         return valor;
     }
