@@ -11,5 +11,5 @@ public interface PedidoService {
     Pedido cotizarPedido(Long pedidoId, Long tallerId, BigDecimal costoTaller,
                          BigDecimal precioFinal, String comentarios);
 
-    Pedido registrarPago(Long pedidoId);
+    Pedido registrarPago(Long pedidoId, Long usuarioId);
 }

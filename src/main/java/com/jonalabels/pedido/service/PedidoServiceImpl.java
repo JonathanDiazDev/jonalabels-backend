@@ -80,9 +80,14 @@ class PedidoServiceImpl implements PedidoService {
 
     @Override
     @Transactional
-    public Pedido registrarPago(Long pedidoId) {
+    public Pedido registrarPago(Long pedidoId, Long usuarioId) {
         Pedido pedido = pedidoRepository.findByIdConAsociaciones(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido", pedidoId));
+
+        if (!pedido.getUsuario().getId().equals(usuarioId)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "No tienes permiso para registrar el pago de este pedido");
+        }
 
         if (pedido.getEstado() != EstadoPedido.COTIZADO) {
             throw new IllegalPedidoStateException(

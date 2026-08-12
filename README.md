@@ -88,11 +88,19 @@ MAIL_PASSWORD: tu-app-password
 # Cloudinary (opcional)
 CLOUDINARY_URL: cloudinary://api_key:api_secret@cloud_name
 
-# Admin seed
+# Admin seed (solo desarrollo; deshabilitado en prod)
 ADMIN_EMAIL: admin@jonalabels.com
+APP_ADMIN_SEED_ENABLED: "true"
+APP_ADMIN_SEED_PASSWORD: tu_password_seguro
+
+# Rate limiting
+APP_RATE_LIMIT_MAX: 30
+APP_RATE_LIMIT_WINDOW: 60
 ```
 
-Las variables con `${VAR:default}` usan el valor por defecto en local. En producción, establece cada una como variable de entorno.
+Documentación interactiva disponible en `/swagger-ui.html` cuando la app está corriendo.
+
+Las variables con `${VAR:default}` usan el valor por defecto en local. En producción, establece cada una como variable de entorno (especialmente `JWT_SECRET`, credenciales de BD y `APP_ADMIN_SEED_PASSWORD` vacío/deshabilitado).
 
 ## Ejecución Local
 
@@ -113,9 +121,9 @@ mvn spring-boot:run
 
 La API estará disponible en `http://localhost:8080`.
 
-El usuario admin se crea automáticamente al iniciar:
-- **Email:** `admin@jonalabels.com`
-- **Contraseña:** `Admin123!`
+El usuario admin se crea automáticamente al iniciar **solo si** `APP_ADMIN_SEED_PASSWORD` está definido:
+- **Email:** `admin@jonalabels.com` (configurable con `ADMIN_EMAIL`)
+- **Password:** valor de `APP_ADMIN_SEED_PASSWORD`
 
 ## Migraciones Flyway
 

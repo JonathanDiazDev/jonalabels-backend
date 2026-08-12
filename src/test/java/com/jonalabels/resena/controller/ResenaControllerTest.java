@@ -5,6 +5,9 @@ import com.jonalabels.common.exception.RecursoNoEncontradoException;
 import com.jonalabels.resena.domain.EstadoModeracion;
 import com.jonalabels.resena.domain.Resena;
 import com.jonalabels.resena.service.ResenaService;
+import com.jonalabels.auth.domain.Usuario;
+import com.jonalabels.auth.service.CurrentUserService;
+import com.jonalabels.security.config.RateLimitFilter;
 import com.jonalabels.security.config.SecurityConfig;
 import com.jonalabels.security.jwt.JwtService;
 import org.junit.jupiter.api.Test;
@@ -34,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ResenaController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({SecurityConfig.class, RateLimitFilter.class, GlobalExceptionHandler.class})
 class ResenaControllerTest {
 
     @Autowired
@@ -45,6 +48,13 @@ class ResenaControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private CurrentUserService currentUserService;
+
+    private Usuario cliente() {
+        return Usuario.builder().id(1L).email("cliente@test.com").rol("CLIENTE").build();
+    }
 
     private Resena buildResena(Long id, EstadoModeracion estado) {
         return Resena.builder()
@@ -61,8 +71,9 @@ class ResenaControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "CLIENTE")
+    @WithMockUser(username = "cliente@test.com", roles = "CLIENTE")
     void crearResena_datosValidos_retorna201() throws Exception {
+        when(currentUserService.requireCurrentUser()).thenReturn(cliente());
         Resena resena = buildResena(1L, EstadoModeracion.PENDIENTE);
         when(resenaService.crearResena(eq(1L), eq(1L), anyInt(), nullable(String.class)))
                 .thenReturn(resena);
@@ -71,7 +82,6 @@ class ResenaControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "usuarioId": 1,
                                     "pedidoId": 1,
                                     "calificacion": 5,
                                     "comentario": "Excelente producto"
@@ -90,7 +100,6 @@ class ResenaControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "usuarioId": 1,
                                     "pedidoId": 1,
                                     "calificacion": 7
                                 }
@@ -106,7 +115,6 @@ class ResenaControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "usuarioId": 1,
                                     "pedidoId": 1
                                 }
                                 """))
@@ -115,8 +123,9 @@ class ResenaControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "CLIENTE")
+    @WithMockUser(username = "cliente@test.com", roles = "CLIENTE")
     void crearResena_usuarioSinPedidoPagado_retorna409() throws Exception {
+        when(currentUserService.requireCurrentUser()).thenReturn(cliente());
         when(resenaService.crearResena(eq(1L), eq(1L), anyInt(), nullable(String.class)))
                 .thenThrow(new IllegalStateException("Solo compradores verificados pueden dejar una reseña"));
 
@@ -124,7 +133,6 @@ class ResenaControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "usuarioId": 1,
                                     "pedidoId": 1,
                                     "calificacion": 5,
                                     "comentario": "test"
@@ -141,7 +149,6 @@ class ResenaControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "usuarioId": 1,
                                     "pedidoId": 1,
                                     "calificacion": 5
                                 }

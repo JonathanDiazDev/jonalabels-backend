@@ -15,3 +15,7 @@ spring:
     enabled: true
     # Flyway se ejecutará sobre el contenedor efímero antes de que arranquen las pruebas
     clean-disabled: false
+
+app:
+  admin:
+    seed-enabled: false

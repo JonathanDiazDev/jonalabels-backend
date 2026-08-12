@@ -5,6 +5,7 @@ import com.jonalabels.pedido.dto.PedidoCotizarRequestDTO;
 import com.jonalabels.pedido.dto.PedidoCreateRequestDTO;
 import com.jonalabels.pedido.dto.PedidoResponseDTO;
 import com.jonalabels.pedido.service.PedidoService;
+import com.jonalabels.auth.service.CurrentUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,13 +24,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class PedidoController {
 
     private final PedidoService pedidoService;
+    private final CurrentUserService currentUserService;
 
     @PostMapping
     @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<PedidoResponseDTO> crearSolicitud(
             @Valid @RequestBody PedidoCreateRequestDTO request) {
+        Long usuarioId = currentUserService.requireCurrentUser().getId();
         var pedido = pedidoService.crearSolicitud(
-                request.usuarioId(),
+                usuarioId,
                 request.productoId(),
                 request.disenoId(),
                 request.cantidad(),
@@ -54,7 +57,8 @@ public class PedidoController {
     @PatchMapping("/{id}/pago")
     @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<PedidoResponseDTO> registrarPago(@PathVariable Long id) {
-        var pedido = pedidoService.registrarPago(id);
+        Long usuarioId = currentUserService.requireCurrentUser().getId();
+        var pedido = pedidoService.registrarPago(id, usuarioId);
         return ResponseEntity.ok(PedidoResponseDTO.from(pedido));
     }
 }

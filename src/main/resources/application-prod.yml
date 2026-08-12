@@ -32,6 +32,17 @@ spring:
     clean-on-validation-error: false
     clean-disabled: true
 
+# Cookies HttpOnly de auth: el frontend vive en otro origen (Vercel).
+# SameSite=None + Secure son obligatorios para que el navegador envíe
+# las cookies en requests cross-origin (login/refresh del panel admin).
+jwt:
+  cookie-secure: ${JWT_COOKIE_SECURE:true}
+  cookie-same-site: ${JWT_COOKIE_SAME_SITE:None}
+
+app:
+  admin:
+    seed-enabled: false
+
 logging:
   level:
     root: INFO

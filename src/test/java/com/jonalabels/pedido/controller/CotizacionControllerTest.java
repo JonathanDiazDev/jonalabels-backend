@@ -6,6 +6,7 @@ import com.jonalabels.pedido.domain.EstadoCotizacion;
 import com.jonalabels.pedido.dto.CotizacionResponseDTO;
 import com.jonalabels.pedido.dto.MetricasDashboardDTO;
 import com.jonalabels.pedido.service.CotizacionService;
+import com.jonalabels.security.config.RateLimitFilter;
 import com.jonalabels.security.config.SecurityConfig;
 import com.jonalabels.security.jwt.JwtService;
 import org.junit.jupiter.api.Test;
@@ -41,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CotizacionController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({SecurityConfig.class, RateLimitFilter.class, GlobalExceptionHandler.class})
 class CotizacionControllerTest {
 
     @Autowired
@@ -246,7 +247,7 @@ class CotizacionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void listarCotizaciones_retornaPaginaConStatus200() throws Exception {
         var ahora = LocalDateTime.now();
         var cotizaciones = List.of(
@@ -275,7 +276,7 @@ class CotizacionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void obtenerMetricas_retornaDashboardDTO() throws Exception {
         var metricas = new MetricasDashboardDTO(10L, 50000L, 3L);
 
@@ -289,7 +290,7 @@ class CotizacionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void exportarCsv_retornaArchivoConHeaders() throws Exception {
         var csv = "ID,Fecha,Nombre,WhatsApp,Email,Cantidad,Tipo Producto,Medidas,Estado\n1,01/01/2025 10:00,María García,5512345678,maria@ejemplo.com,5000,Etiquetas de Satín,5cm x 3cm,NUEVO\n".getBytes();
 
@@ -303,7 +304,7 @@ class CotizacionControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ADMIN")
     void cambiarEstado_retornaCotizacionActualizada() throws Exception {
         var actualizada = new CotizacionResponseDTO(1L, "María García", "5512345678", "maria@ejemplo.com", 5000, "Etiquetas de Satín", "5cm x 3cm", LocalDateTime.now(), EstadoCotizacion.COTIZADO, null);
 
@@ -335,5 +336,12 @@ class CotizacionControllerTest {
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.error", is("Internal Server Error")))
                 .andExpect(jsonPath("$.message", is("Error interno del servidor")));
+    }
+
+    @Test
+    @WithMockUser(roles = "CLIENTE")
+    void listarCotizaciones_comoCliente_retorna403() throws Exception {
+        mockMvc.perform(get("/api/v1/cotizaciones"))
+                .andExpect(status().isForbidden());
     }
 }

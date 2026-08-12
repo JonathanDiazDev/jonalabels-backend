@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
@@ -20,6 +22,8 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class EmailService {
+
+    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
     private final JavaMailSender mailSender;
     private final StorageService storageService;
@@ -81,8 +85,7 @@ public class EmailService {
                 helper.addAttachment(nombre, storageService.cargarComoRecurso(urlDiseno));
             }
         } catch (IOException | MessagingException | RuntimeException e) {
-            System.err.println("[EmailService] No se pudo adjuntar el diseño " + urlDiseno
-                    + ": " + e.getMessage());
+            log.warn("No se pudo adjuntar el diseño {}: {}", urlDiseno, e.getMessage());
         }
     }
 
@@ -128,8 +131,7 @@ public class EmailService {
             helper.setText(body, true);
             mailSender.send(message);
         } catch (MailException | MessagingException | UnsupportedEncodingException e) {
-            System.err.println("[EmailService] Error al enviar confirmación al cliente: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error al enviar confirmación al cliente {}: {}", correoCliente, e.getMessage());
         }
     }
 

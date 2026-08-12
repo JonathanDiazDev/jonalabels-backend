@@ -52,7 +52,7 @@ class AuthServiceImpl implements AuthService {
 
     @Override
     public TokenPair refresh(String refreshToken) {
-        if (!jwtService.isTokenValid(refreshToken)) {
+        if (!jwtService.isTokenValid(refreshToken) || !jwtService.isRefreshToken(refreshToken)) {
             throw new org.springframework.security.authentication
                     .BadCredentialsException("Refresh token inválido o expirado");
         }

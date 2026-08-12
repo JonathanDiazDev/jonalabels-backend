@@ -5,9 +5,14 @@ spring:
   main:
     lazy-initialization: true
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/etiquetas_rfq_db}
-    username: ${SPRING_DATASOURCE_USERNAME:JonaDev1230}
+    username: ${SPRING_DATASOURCE_USERNAME:admin_etiquetas}
     password: ${SPRING_DATASOURCE_PASSWORD:password_seguro_123}
     driver-class-name: org.postgresql.Driver
     hikari:
@@ -27,8 +32,8 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
-    clean-on-validation-error: true
-    clean-disabled: false
+    clean-on-validation-error: false
+    clean-disabled: true
 
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
@@ -42,6 +47,15 @@ spring:
           starttls:
             enable: true
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
+
 jwt:
   secret: ${JWT_SECRET:dGhpcy1pcy1hLXZlcnktbG9uZy1zZWNyZXQta2V5LWZvci1oZWFkZXItYmFzZWQtZW5jb2RpbmctaW4tYmFzZTY0LWZvci1qd3Qtc2lnbmluZw==}
   access-expiration: ${JWT_ACCESS_EXPIRATION:900000}
@@ -52,8 +66,19 @@ jwt:
 app:
   admin:
     email: ${ADMIN_EMAIL:admin@jonalabels.com}
+    seed-enabled: ${APP_ADMIN_SEED_ENABLED:true}
+    seed-password: ${APP_ADMIN_SEED_PASSWORD:}
   mail:
     from: ${MAIL_USERNAME:}
+  upload-dir: ${APP_UPLOAD_DIR:uploads}
+  rate-limit:
+    max-requests: ${APP_RATE_LIMIT_MAX:30}
+    window-seconds: ${APP_RATE_LIMIT_WINDOW:60}
 
+CLOUDINARY_URL: ${CLOUDINARY_URL:}
 
-CLOUDINARY_URL: "cloudinary://tu_api_key:tu_api_secret@tu_cloud_name"
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html

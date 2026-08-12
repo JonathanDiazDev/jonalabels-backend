@@ -5,6 +5,7 @@ import com.jonalabels.resena.dto.ResenaCreateRequestDTO;
 import com.jonalabels.resena.dto.ResenaModerarRequestDTO;
 import com.jonalabels.resena.dto.ResenaResponseDTO;
 import com.jonalabels.resena.service.ResenaService;
+import com.jonalabels.auth.service.CurrentUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,13 +27,15 @@ import java.util.List;
 public class ResenaController {
 
     private final ResenaService resenaService;
+    private final CurrentUserService currentUserService;
 
     @PostMapping
     @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<ResenaResponseDTO> crearResena(
             @Valid @RequestBody ResenaCreateRequestDTO request) {
+        Long usuarioId = currentUserService.requireCurrentUser().getId();
         var resena = resenaService.crearResena(
-                request.usuarioId(),
+                usuarioId,
                 request.pedidoId(),
                 request.calificacion(),
                 request.comentario());

@@ -3,6 +3,7 @@ package com.jonalabels.archivo.controller;
 import com.jonalabels.archivo.dto.ArchivoResponseDTO;
 import com.jonalabels.archivo.service.StorageService;
 import com.jonalabels.common.exception.GlobalExceptionHandler;
+import com.jonalabels.security.config.RateLimitFilter;
 import com.jonalabels.security.config.SecurityConfig;
 import com.jonalabels.security.jwt.JwtService;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ArchivoController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({SecurityConfig.class, RateLimitFilter.class, GlobalExceptionHandler.class})
 class ArchivoControllerTest {
 
     @Autowired

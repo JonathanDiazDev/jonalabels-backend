@@ -10,6 +10,9 @@ import com.jonalabels.pedido.domain.IllegalPedidoStateException;
 import com.jonalabels.pedido.domain.Pedido;
 import com.jonalabels.pedido.service.PedidoService;
 import com.jonalabels.common.exception.RecursoNoEncontradoException;
+import com.jonalabels.auth.domain.Usuario;
+import com.jonalabels.auth.service.CurrentUserService;
+import com.jonalabels.security.config.RateLimitFilter;
 import com.jonalabels.security.config.SecurityConfig;
 import com.jonalabels.security.jwt.JwtService;
 import org.junit.jupiter.api.Test;
@@ -36,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PedidoController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({SecurityConfig.class, RateLimitFilter.class, GlobalExceptionHandler.class})
 class PedidoControllerTest {
 
     @Autowired
@@ -47,6 +50,13 @@ class PedidoControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private CurrentUserService currentUserService;
+
+    private Usuario cliente() {
+        return Usuario.builder().id(1L).email("cliente@test.com").rol("CLIENTE").build();
+    }
 
     private Pedido buildPedido(Long id, EstadoPedido estado) {
         Usuario usuario = Usuario.builder().id(1L).build();
@@ -69,8 +79,9 @@ class PedidoControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "CLIENTE")
+    @WithMockUser(username = "cliente@test.com", roles = "CLIENTE")
     void crearSolicitud_retorna201() throws Exception {
+        when(currentUserService.requireCurrentUser()).thenReturn(cliente());
         Pedido pedido = buildPedido(1L, EstadoPedido.ESPERANDO_FACTIBILIDAD);
         when(pedidoService.crearSolicitud(anyLong(), anyLong(), anyLong(), anyInt(), any())).thenReturn(pedido);
 
@@ -78,7 +89,6 @@ class PedidoControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "usuarioId": 1,
                                     "productoId": 1,
                                     "disenoId": 1,
                                     "cantidad": 500
@@ -91,8 +101,9 @@ class PedidoControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "CLIENTE")
+    @WithMockUser(username = "cliente@test.com", roles = "CLIENTE")
     void crearSolicitud_conUrlDiseno_retorna201() throws Exception {
+        when(currentUserService.requireCurrentUser()).thenReturn(cliente());
         Pedido pedido = buildPedido(1L, EstadoPedido.ESPERANDO_FACTIBILIDAD);
         pedido.setUrlDiseno("https://s3.amazonaws.com/logos/diseno.png");
         when(pedidoService.crearSolicitud(anyLong(), anyLong(), anyLong(), anyInt(), any())).thenReturn(pedido);
@@ -101,7 +112,6 @@ class PedidoControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "usuarioId": 1,
                                     "productoId": 1,
                                     "disenoId": 1,
                                     "cantidad": 500,
@@ -116,13 +126,12 @@ class PedidoControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "CLIENTE")
+    @WithMockUser(username = "cliente@test.com", roles = "CLIENTE")
     void crearSolicitud_conDisenoIdNulo_retorna400() throws Exception {
         mockMvc.perform(post("/api/v1/pedidos")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "usuarioId": 1,
                                     "productoId": 1,
                                     "disenoId": null,
                                     "cantidad": 500
@@ -134,13 +143,12 @@ class PedidoControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "CLIENTE")
+    @WithMockUser(username = "cliente@test.com", roles = "CLIENTE")
     void crearSolicitud_conCantidadNull_retorna400() throws Exception {
         mockMvc.perform(post("/api/v1/pedidos")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "usuarioId": 1,
                                     "productoId": 1,
                                     "disenoId": 1
                                 }
@@ -189,10 +197,11 @@ class PedidoControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "CLIENTE")
+    @WithMockUser(username = "cliente@test.com", roles = "CLIENTE")
     void registrarPago_retorna200() throws Exception {
+        when(currentUserService.requireCurrentUser()).thenReturn(cliente());
         Pedido pedido = buildPedido(1L, EstadoPedido.PAGADO);
-        when(pedidoService.registrarPago(1L)).thenReturn(pedido);
+        when(pedidoService.registrarPago(1L, 1L)).thenReturn(pedido);
 
         mockMvc.perform(patch("/api/v1/pedidos/1/pago")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -201,9 +210,10 @@ class PedidoControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "CLIENTE")
+    @WithMockUser(username = "cliente@test.com", roles = "CLIENTE")
     void registrarPago_estadoInvalido_retorna400() throws Exception {
-        when(pedidoService.registrarPago(1L))
+        when(currentUserService.requireCurrentUser()).thenReturn(cliente());
+        when(pedidoService.registrarPago(1L, 1L))
                 .thenThrow(new IllegalPedidoStateException(1L, EstadoPedido.ESPERANDO_FACTIBILIDAD, EstadoPedido.COTIZADO));
 
         mockMvc.perform(patch("/api/v1/pedidos/1/pago")
@@ -254,7 +264,6 @@ class PedidoControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "usuarioId": 1,
                                     "productoId": 1,
                                     "disenoId": 1,
                                     "cantidad": 500
@@ -264,8 +273,9 @@ class PedidoControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "CLIENTE")
+    @WithMockUser(username = "cliente@test.com", roles = "CLIENTE")
     void crearSolicitud_urlDisenoOpcional_retorna201() throws Exception {
+        when(currentUserService.requireCurrentUser()).thenReturn(cliente());
         Pedido pedido = buildPedido(1L, EstadoPedido.ESPERANDO_FACTIBILIDAD);
         when(pedidoService.crearSolicitud(anyLong(), anyLong(), anyLong(), anyInt(), any())).thenReturn(pedido);
 
@@ -273,7 +283,6 @@ class PedidoControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "usuarioId": 1,
                                     "productoId": 1,
                                     "disenoId": 1,
                                     "cantidad": 500

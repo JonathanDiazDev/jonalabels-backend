@@ -4,10 +4,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public record PedidoCreateRequestDTO(
-        @NotNull(message = "El id del usuario es obligatorio")
-        @Positive(message = "El id del usuario debe ser positivo")
-        Long usuarioId,
-
         @NotNull(message = "El id del producto es obligatorio")
         @Positive(message = "El id del producto debe ser positivo")
         Long productoId,

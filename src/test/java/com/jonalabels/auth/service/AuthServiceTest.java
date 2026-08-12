@@ -112,6 +112,7 @@ class AuthServiceTest {
     void refresh_tokenValido_retornaNuevoTokenPair() {
         Usuario usuario = buildUsuario();
         when(jwtService.isTokenValid("refresh-valido")).thenReturn(true);
+        when(jwtService.isRefreshToken("refresh-valido")).thenReturn(true);
         when(jwtService.extractEmail("refresh-valido")).thenReturn("cliente@test.com");
         when(usuarioRepository.findByEmail("cliente@test.com")).thenReturn(Optional.of(usuario));
         when(jwtService.generarAccessToken(usuario)).thenReturn("nuevo-access");
@@ -129,6 +130,18 @@ class AuthServiceTest {
         when(jwtService.isTokenValid("refresh-expirado")).thenReturn(false);
 
         assertThatThrownBy(() -> authService.refresh("refresh-expirado"))
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessageContaining("Refresh token inválido o expirado");
+
+        verify(usuarioRepository, never()).findByEmail(anyString());
+    }
+
+    @Test
+    void refresh_accessToken_lanzaExcepcion() {
+        when(jwtService.isTokenValid("access-token")).thenReturn(true);
+        when(jwtService.isRefreshToken("access-token")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.refresh("access-token"))
                 .isInstanceOf(BadCredentialsException.class)
                 .hasMessageContaining("Refresh token inválido o expirado");
 

@@ -234,7 +234,7 @@ class PedidoServiceTest {
         when(pedidoRepository.findByIdConAsociaciones(1L)).thenReturn(Optional.of(pedidoCotizado));
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Pedido resultado = pedidoService.registrarPago(1L);
+        Pedido resultado = pedidoService.registrarPago(1L, 1L);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoPedido.PAGADO);
 
@@ -245,7 +245,7 @@ class PedidoServiceTest {
     void registrarPago_lanzaExcepcionSiEstadoNoEsCotizado() {
         when(pedidoRepository.findByIdConAsociaciones(1L)).thenReturn(Optional.of(pedidoEsperandoFactibilidad));
 
-        assertThatThrownBy(() -> pedidoService.registrarPago(1L))
+        assertThatThrownBy(() -> pedidoService.registrarPago(1L, 1L))
                 .isInstanceOf(IllegalPedidoStateException.class)
                 .hasMessageContaining("1")
                 .hasMessageContaining("ESPERANDO_FACTIBILIDAD")
@@ -258,7 +258,7 @@ class PedidoServiceTest {
     void registrarPago_lanzaExcepcionSiPedidoNoExiste() {
         when(pedidoRepository.findByIdConAsociaciones(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> pedidoService.registrarPago(99L))
+        assertThatThrownBy(() -> pedidoService.registrarPago(99L, 1L))
                 .isInstanceOf(RecursoNoEncontradoException.class)
                 .hasMessageContaining("Pedido");
 
@@ -279,7 +279,7 @@ class PedidoServiceTest {
 
         when(pedidoRepository.findByIdConAsociaciones(1L)).thenReturn(Optional.of(pedidoFinalizado));
 
-        assertThatThrownBy(() -> pedidoService.registrarPago(1L))
+        assertThatThrownBy(() -> pedidoService.registrarPago(1L, 1L))
                 .isInstanceOf(IllegalPedidoStateException.class)
                 .hasMessageContaining("FINALIZADO");
 
@@ -328,7 +328,7 @@ class PedidoServiceTest {
 
         when(pedidoRepository.findByIdConAsociaciones(1L)).thenReturn(Optional.of(cotizado));
 
-        Pedido pagado = pedidoService.registrarPago(1L);
+        Pedido pagado = pedidoService.registrarPago(1L, 1L);
         assertThat(pagado.getEstado()).isEqualTo(EstadoPedido.PAGADO);
     }
 }

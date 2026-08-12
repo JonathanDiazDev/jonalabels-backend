@@ -47,6 +47,14 @@ public class JwtService {
         return !isTokenExpired(token);
     }
 
+    public boolean isAccessToken(String token) {
+        return ACCESS.equals(extractClaim(token, claims -> claims.get("type", String.class)));
+    }
+
+    public boolean isRefreshToken(String token) {
+        return REFRESH.equals(extractClaim(token, claims -> claims.get("type", String.class)));
+    }
+
     private String buildToken(Usuario usuario, String type, long expiration) {
         return Jwts.builder()
                 .subject(usuario.getEmail())

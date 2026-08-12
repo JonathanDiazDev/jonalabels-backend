@@ -62,6 +62,10 @@ class LocalFileSystemStorageService implements StorageService {
     public Resource cargarComoRecurso(String nombreArchivo) {
         Path archivo = directorioDestino.resolve(nombreArchivo).normalize();
 
+        if (!archivo.startsWith(directorioDestino)) {
+            throw new IllegalArgumentException("Nombre de archivo no válido");
+        }
+
         if (!Files.exists(archivo)) {
             throw new com.jonalabels.common.exception.RecursoNoEncontradoException(
                     "Archivo '" + nombreArchivo + "' no encontrado");
