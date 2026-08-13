@@ -1,7 +1,6 @@
 package com.jonalabels.auth.service;
 
 import com.jonalabels.auth.domain.Usuario;
-import com.jonalabels.auth.dto.RegistroRequestDTO;
 import com.jonalabels.auth.dto.TokenPair;
 import com.jonalabels.auth.repository.UsuarioRepository;
 import com.jonalabels.security.jwt.JwtService;
@@ -13,7 +12,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
@@ -32,9 +30,6 @@ class AuthServiceTest {
     private UsuarioRepository usuarioRepository;
 
     @Mock
-    private PasswordEncoder passwordEncoder;
-
-    @Mock
     private AuthenticationManager authenticationManager;
 
     @Mock
@@ -51,32 +46,6 @@ class AuthServiceTest {
                 .rol("CLIENTE")
                 .telefono("+525512345678")
                 .build();
-    }
-
-    @Test
-    void registrar_usuarioNuevo_guardaCorrectamente() {
-        RegistroRequestDTO request = new RegistroRequestDTO(
-                "nuevo@test.com", "123456", "CLIENTE", "+525512345678");
-        when(usuarioRepository.findByEmail("nuevo@test.com")).thenReturn(Optional.empty());
-        when(passwordEncoder.encode("123456")).thenReturn("$2a$10$encoded");
-
-        authService.registrar(request);
-
-        verify(usuarioRepository).save(any(Usuario.class));
-    }
-
-    @Test
-    void registrar_emailExistente_lanzaExcepcion() {
-        RegistroRequestDTO request = new RegistroRequestDTO(
-                "existente@test.com", "123456", "CLIENTE", "+525512345678");
-        Usuario existente = Usuario.builder().id(1L).email("existente@test.com").build();
-        when(usuarioRepository.findByEmail("existente@test.com")).thenReturn(Optional.of(existente));
-
-        assertThatThrownBy(() -> authService.registrar(request))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("No se pudo completar el registro");
-
-        verify(usuarioRepository, never()).save(any());
     }
 
     @Test

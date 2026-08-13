@@ -75,8 +75,6 @@ app:
     max-requests: ${APP_RATE_LIMIT_MAX:30}
     window-seconds: ${APP_RATE_LIMIT_WINDOW:60}
 
-CLOUDINARY_URL: ${CLOUDINARY_URL:}
-
 springdoc:
   api-docs:
     path: /v3/api-docs

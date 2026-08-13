@@ -2,7 +2,6 @@ package com.jonalabels.auth.controller;
 
 import com.jonalabels.auth.dto.AuthResponseDTO;
 import com.jonalabels.auth.dto.LoginRequestDTO;
-import com.jonalabels.auth.dto.RegistroRequestDTO;
 import com.jonalabels.auth.dto.TokenPair;
 import com.jonalabels.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -33,12 +32,6 @@ public class AuthController {
 
     private static final long ACCESS_MAX_AGE = 900;       // 15 minutos
     private static final long REFRESH_MAX_AGE = 604800;   // 7 días
-
-    @PostMapping("/registro")
-    public ResponseEntity<Void> registro(@Valid @RequestBody RegistroRequestDTO request) {
-        authService.registrar(request);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
 
     /*
      * Ambos tokens se devuelven como cookies HttpOnly.

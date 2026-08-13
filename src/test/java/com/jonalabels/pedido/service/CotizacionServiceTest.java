@@ -1,5 +1,6 @@
 package com.jonalabels.pedido.service;
 
+import com.jonalabels.archivo.service.StorageService;
 import com.jonalabels.cloudinary.service.CloudinaryService;
 import com.jonalabels.email.service.EmailService;
 import com.jonalabels.pedido.domain.Cotizacion;
@@ -13,6 +14,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -37,6 +39,12 @@ class CotizacionServiceTest {
 
     @Mock
     private CloudinaryService cloudinaryService;
+
+    @Mock
+    private ObjectProvider<CloudinaryService> cloudinaryServiceProvider;
+
+    @Mock
+    private StorageService storageService;
 
     @InjectMocks
     private CotizacionServiceImpl cotizacionService;
@@ -68,6 +76,7 @@ class CotizacionServiceTest {
                 .urlDiseno(urlCloudinary)
                 .build();
 
+        when(cloudinaryServiceProvider.getIfAvailable()).thenReturn(cloudinaryService);
         when(cloudinaryService.subirArchivo(any())).thenReturn(urlCloudinary);
         when(cotizacionRepository.save(any(Cotizacion.class))).thenReturn(cotizacionEsperada);
 
@@ -138,6 +147,7 @@ class CotizacionServiceTest {
                 "archivo", "logo-ana.png", "image/png", "contenido".getBytes());
         var urlCloudinary = "https://res.cloudinary.com/jonalabels/logo-ana.png";
 
+        when(cloudinaryServiceProvider.getIfAvailable()).thenReturn(cloudinaryService);
         when(cloudinaryService.subirArchivo(any())).thenReturn(urlCloudinary);
         when(cotizacionRepository.save(any(Cotizacion.class))).thenAnswer(invocation -> {
             Cotizacion c = invocation.getArgument(0);

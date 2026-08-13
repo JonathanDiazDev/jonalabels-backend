@@ -142,7 +142,7 @@ El usuario admin se crea automáticamente al iniciar **solo si** `APP_ADMIN_SEED
 
 | Método | Ruta | Acceso | Descripción |
 |--------|------|--------|-------------|
-| `POST` | `/api/v1/auth/registro` | Público | Registrar nuevo usuario |
+| `POST` | `/api/v1/auth/registro` | **Deshabilitado** | Registro público desactivado (403 Forbidden) |
 | `POST` | `/api/v1/auth/login` | Público | Iniciar sesión (Set-Cookie: access_token, refresh_token) |
 | `POST` | `/api/v1/auth/refresh` | Público | Refrescar tokens (requiere cookie refresh_token) |
 | `POST` | `/api/v1/auth/logout` | Público | Cerrar sesión (limpia cookies) |

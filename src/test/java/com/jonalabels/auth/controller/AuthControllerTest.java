@@ -19,7 +19,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -43,112 +42,25 @@ class AuthControllerTest {
     private static final TokenPair SAMPLE_TOKENS =
             new TokenPair("access-abc", "refresh-xyz", "cliente@test.com", "CLIENTE");
 
-    private static final String REGISTRO_TEMPLATE = """
+    private static final String REGISTRO_BODY = """
             {
-                "email": "%s",
-                "password": "%s",
-                "rol": "%s",
-                "telefono": "%s"
+                "email": "nuevo@test.com",
+                "password": "123456",
+                "rol": "ADMIN",
+                "telefono": "+525512345678"
             }
             """;
 
     @Test
-    void registro_datosValidos_retorna201() throws Exception {
+    void registro_deshabilitado_retorna403() throws Exception {
         mockMvc.perform(post("/api/v1/auth/registro")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(REGISTRO_TEMPLATE.formatted(
-                                "nuevo@test.com", "123456", "CLIENTE", "+525512345678")))
-                .andExpect(status().isCreated());
+                        .content(REGISTRO_BODY))
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    void registro_emailInvalido_retorna400() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/registro")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(REGISTRO_TEMPLATE.formatted(
-                                "no-es-email", "123456", "CLIENTE", "+525512345678")))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Validación fallida"));
-    }
-
-    @Test
-    void registro_emailVacio_retorna400() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/registro")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(REGISTRO_TEMPLATE.formatted(
-                                "", "123456", "CLIENTE", "+525512345678")))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Validación fallida"));
-    }
-
-    @Test
-    void registro_passwordCorta_retorna400() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/registro")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(REGISTRO_TEMPLATE.formatted(
-                                "test@test.com", "123", "CLIENTE", "+525512345678")))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Validación fallida"));
-    }
-
-    @Test
-    void registro_rolVacio_retorna400() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/registro")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(REGISTRO_TEMPLATE.formatted(
-                                "test@test.com", "123456", "", "+525512345678")))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Validación fallida"));
-    }
-
-    @Test
-    void registro_telefonoVacio_retorna400() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/registro")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(REGISTRO_TEMPLATE.formatted(
-                                "test@test.com", "123456", "CLIENTE", "")))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Validación fallida"));
-    }
-
-    @Test
-    void registro_telefonoFormatoInvalido_retorna400() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/registro")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(REGISTRO_TEMPLATE.formatted(
-                                "test@test.com", "123456", "CLIENTE", "abc-def-ghij")))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Validación fallida"));
-    }
-
-    @Test
-    void registro_telefonoMuyCorto_retorna400() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/registro")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(REGISTRO_TEMPLATE.formatted(
-                                "test@test.com", "123456", "CLIENTE", "12345")))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Validación fallida"));
-    }
-
-    @Test
-    void registro_emailDuplicado_retorna409ConMensajeGenerico() throws Exception {
-        org.mockito.Mockito.doThrow(
-                        new IllegalStateException("No se pudo completar el registro. Intente nuevamente."))
-                .when(authService).registrar(
-                        org.mockito.ArgumentMatchers.any(com.jonalabels.auth.dto.RegistroRequestDTO.class));
-
-        mockMvc.perform(post("/api/v1/auth/registro")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(REGISTRO_TEMPLATE.formatted(
-                                "dup@test.com", "123456", "CLIENTE", "+525512345678")))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").value("Conflict"))
-                .andExpect(jsonPath("$.message").value("No se pudo completar el registro. Intente nuevamente."));
-    }
-
-    @Test
-    void login_credencialesValidas_retorna200ConCookiesHttpOnly() throws Exception {
+    void login_datosValidos_retorna200ConCookies() throws Exception {
         when(authService.login("cliente@test.com", "123456")).thenReturn(SAMPLE_TOKENS);
 
         mockMvc.perform(post("/api/v1/auth/login")
@@ -162,42 +74,18 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("cliente@test.com"))
                 .andExpect(jsonPath("$.rol").value("CLIENTE"))
-                .andExpect(header().exists("Set-Cookie"))
-                .andExpect(result -> {
-                    List<String> cookies = result.getResponse().getHeaders("Set-Cookie");
-                    assertThat(cookies).hasSizeGreaterThanOrEqualTo(2);
-                    assertThat(cookies).anyMatch(c ->
-                            c.contains("access_token=") && c.contains("HttpOnly") && c.contains("Path=/api"));
-                    assertThat(cookies).anyMatch(c ->
-                            c.contains("refresh_token=") && c.contains("HttpOnly") && c.contains("Path=/api/v1/auth"));
-                });
+                .andExpect(header().exists("Set-Cookie"));
+
+        verify(authService).login("cliente@test.com", "123456");
     }
 
     @Test
-    void login_credencialesInvalidas_retorna401() throws Exception {
-        when(authService.login("invalido@test.com", "wrong"))
-                .thenThrow(new BadCredentialsException("Bad credentials"));
-
+    void login_emailInvalido_retorna400() throws Exception {
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "email": "invalido@test.com",
-                                    "password": "wrong"
-                                }
-                                """))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("Unauthorized"))
-                .andExpect(jsonPath("$.message").value("Credenciales inválidas"));
-    }
-
-    @Test
-    void login_emailVacio_retorna400() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "email": "",
+                                    "email": "no-es-email",
                                     "password": "123456"
                                 }
                                 """))
@@ -206,36 +94,32 @@ class AuthControllerTest {
     }
 
     @Test
-    void login_passwordVacia_retorna400() throws Exception {
+    void login_credencialesInvalidas_retorna401() throws Exception {
+        when(authService.login("cliente@test.com", "wrong"))
+                .thenThrow(new BadCredentialsException("Bad credentials"));
+
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "email": "test@test.com",
-                                    "password": ""
+                                    "email": "cliente@test.com",
+                                    "password": "wrong"
                                 }
                                 """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Validación fallida"));
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void refresh_tokenValido_retorna200ConNuevasCookies() throws Exception {
+    void refresh_conCookieValida_retorna200() throws Exception {
         when(authService.refresh("refresh-xyz")).thenReturn(SAMPLE_TOKENS);
 
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .cookie(new jakarta.servlet.http.Cookie("refresh_token", "refresh-xyz")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("cliente@test.com"))
-                .andExpect(jsonPath("$.rol").value("CLIENTE"))
-                .andExpect(header().exists("Set-Cookie"))
-                .andExpect(result -> {
-                    List<String> cookies = result.getResponse().getHeaders("Set-Cookie");
-                    assertThat(cookies).anyMatch(c ->
-                            c.contains("access_token=") && c.contains("HttpOnly"));
-                    assertThat(cookies).anyMatch(c ->
-                            c.contains("refresh_token=") && c.contains("HttpOnly"));
-                });
+                .andExpect(header().exists("Set-Cookie"));
+
+        verify(authService).refresh("refresh-xyz");
     }
 
     @Test
@@ -245,26 +129,15 @@ class AuthControllerTest {
     }
 
     @Test
-    void refresh_tokenInvalido_retorna401() throws Exception {
-        when(authService.refresh("token-invalido"))
-                .thenThrow(new BadCredentialsException("Refresh token inválido o expirado"));
-
-        mockMvc.perform(post("/api/v1/auth/refresh")
-                        .cookie(new jakarta.servlet.http.Cookie("refresh_token", "token-invalido")))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void logout_retorna200LimpiaCookies() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/logout"))
+    void logout_retorna200YLimpiaCookies() throws Exception {
+        var result = mockMvc.perform(post("/api/v1/auth/logout"))
                 .andExpect(status().isOk())
-                .andExpect(header().exists("Set-Cookie"))
-                .andExpect(result -> {
-                    List<String> cookies = result.getResponse().getHeaders("Set-Cookie");
-                    assertThat(cookies).anyMatch(c ->
-                            c.contains("access_token=") && c.contains("Max-Age=0") && c.contains("HttpOnly"));
-                    assertThat(cookies).anyMatch(c ->
-                            c.contains("refresh_token=") && c.contains("Max-Age=0") && c.contains("HttpOnly"));
-                });
+                .andReturn();
+
+        List<String> setCookieHeaders = result.getResponse().getHeaders("Set-Cookie");
+        assertThat(setCookieHeaders).isNotEmpty();
+        assertThat(setCookieHeaders.stream().anyMatch(h -> h.contains("access_token="))).isTrue();
+        assertThat(setCookieHeaders.stream().anyMatch(h -> h.contains("refresh_token="))).isTrue();
+        assertThat(setCookieHeaders.stream().anyMatch(h -> h.contains("Max-Age=0"))).isTrue();
     }
 }

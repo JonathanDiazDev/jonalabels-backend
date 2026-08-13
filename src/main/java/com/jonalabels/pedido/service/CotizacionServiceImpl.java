@@ -1,5 +1,6 @@
 package com.jonalabels.pedido.service;
 
+import com.jonalabels.archivo.service.StorageService;
 import com.jonalabels.cloudinary.service.CloudinaryService;
 import com.jonalabels.email.service.EmailService;
 import com.jonalabels.pedido.domain.Cotizacion;
@@ -9,6 +10,7 @@ import com.jonalabels.pedido.dto.CotizacionResponseDTO;
 import com.jonalabels.pedido.dto.MetricasDashboardDTO;
 import com.jonalabels.pedido.repository.CotizacionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,13 +28,14 @@ public class CotizacionServiceImpl implements CotizacionService {
 
     private final CotizacionRepository cotizacionRepository;
     private final EmailService emailService;
-    private final CloudinaryService cloudinaryService;
+    private final ObjectProvider<CloudinaryService> cloudinaryServiceProvider;
+    private final StorageService storageService;
 
     @Override
     public Cotizacion crear(CotizacionRequestDTO request, MultipartFile archivo) {
         String urlDiseno = null;
         if (archivo != null && !archivo.isEmpty()) {
-            urlDiseno = cloudinaryService.subirArchivo(archivo);
+            urlDiseno = subirDiseno(archivo);
         }
         var cotizacion = Cotizacion.builder()
                 .nombre(request.nombre())
@@ -134,5 +137,14 @@ public class CotizacionServiceImpl implements CotizacionService {
                 c.getFechaCreacion(),
                 c.getEstado(),
                 c.getUrlDiseno());
+    }
+
+    private String subirDiseno(MultipartFile archivo) {
+        CloudinaryService cloudinaryService = cloudinaryServiceProvider.getIfAvailable();
+        if (cloudinaryService != null) {
+            return cloudinaryService.subirArchivo(archivo);
+        }
+        String nombreGuardado = storageService.guardar(archivo);
+        return "/api/v1/archivos/" + nombreGuardado;
     }
 }
